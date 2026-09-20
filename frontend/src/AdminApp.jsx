@@ -138,6 +138,22 @@ function AdminDashboard({ token, setToken }) {
     }
   };
 
+  const handleResendEmail = async (id) => {
+    setIsProcessing(true);
+    try {
+      const res = await api.post(`/admin/doctor-applications/${id}/resend-email`, {}, { headers: { Authorization: `Bearer ${token}` } });
+      setActionFeedback({
+        type: 'success',
+        message: res.data.message || 'Notification email dispatched to doctor successfully.'
+      });
+      setTimeout(() => setActionFeedback(null), 5000);
+    } catch (err) {
+      alert("Error resending email: " + (err.response?.data?.message || err.message));
+    } finally {
+      setIsProcessing(false);
+    }
+  };
+
   const handleLogout = () => {
     localStorage.removeItem('admin_token');
     setToken(null);
@@ -704,6 +720,17 @@ function AdminDashboard({ token, setToken }) {
             >
               Close
             </button>
+            {selectedApp?.status !== 'pending' && (
+              <button
+                disabled={isProcessing}
+                onClick={() => handleResendEmail(selectedApp._id)}
+                style={{ padding: '12px 20px', background: '#f0f9ff', color: '#0284c7', border: '1px solid #bae6fd', borderRadius: '8px', fontWeight: 600, cursor: 'pointer', transition: 'all 0.2s' }}
+                onMouseOver={e => e.currentTarget.style.background = '#e0f2fe'}
+                onMouseOut={e => e.currentTarget.style.background = '#f0f9ff'}
+              >
+                {isProcessing ? 'Sending...' : '📧 Resend Email'}
+              </button>
+            )}
             <button
               onClick={() => openRejectModal(selectedApp)}
               style={{ padding: '12px 24px', background: '#fee2e2', color: '#dc2626', border: 'none', borderRadius: '8px', fontWeight: 600, cursor: 'pointer', transition: 'all 0.2s' }}
@@ -719,7 +746,7 @@ function AdminDashboard({ token, setToken }) {
               onMouseOver={e => e.currentTarget.style.background = '#16a34a'}
               onMouseOut={e => e.currentTarget.style.background = '#22c55e'}
             >
-              {isProcessing ? 'Provisioning...' : (selectedApp?.status === 'approved' ? 'Re-provision & Notify' : 'Approve & Dispatch Credentials')}
+              {isProcessing ? 'Provisioning...' : (selectedApp?.status === 'approved' ? 'Re-approve & Resend Credentials' : 'Approve & Dispatch Credentials')}
             </button>
           </>
         }

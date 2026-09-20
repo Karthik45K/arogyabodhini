@@ -108,10 +108,15 @@ router.post('/admin/doctor-applications/:id/approve', authAdmin, async (req, res
     app.reviewedAt = new Date();
     await app.save();
 
-    // Trigger email non-blocking so the admin UI responds instantly
-    sendDoctorApprovalEmail(app.email, app.fullName)
-      .then(emailResult => console.log('[admin/approve] Email dispatch status for', app.email, ':', emailResult))
-      .catch(emailErr => console.error('[admin/approve] Email error for', app.email, ':', emailErr.message));
+    // Send email with 6s bounded wait so admin gets confirmation if quick, without hanging
+    try {
+      await Promise.race([
+        sendDoctorApprovalEmail(app.email, app.fullName),
+        new Promise(resolve => setTimeout(() => resolve({ timeout: true }), 6000))
+      ]);
+    } catch (emailErr) {
+      console.error('[admin/approve] Email error for', app.email, ':', emailErr.message);
+    }
 
     res.json({ success: true, message: 'Approved successfully', doctorId: app.doctorId });
   } catch (err) {
@@ -131,14 +136,41 @@ router.post('/admin/doctor-applications/:id/reject', authAdmin, async (req, res)
     app.reviewedAt = new Date();
     await app.save();
 
-    // Trigger email non-blocking so the admin UI responds instantly
-    sendDoctorRejectionEmail(app.email, app.fullName, app.rejectionReason)
-      .then(emailResult => console.log('[admin/reject] Email dispatch status for', app.email, ':', emailResult))
-      .catch(emailErr => console.error('[admin/reject] Email error for', app.email, ':', emailErr.message));
+    // Send email with 6s bounded wait
+    try {
+      await Promise.race([
+        sendDoctorRejectionEmail(app.email, app.fullName, app.rejectionReason),
+        new Promise(resolve => setTimeout(() => resolve({ timeout: true }), 6000))
+      ]);
+    } catch (emailErr) {
+      console.error('[admin/reject] Email error for', app.email, ':', emailErr.message);
+    }
 
     res.json({ success: true, message: 'Rejected successfully' });
   } catch (err) {
     console.error('[admin/reject] Server error:', err);
+    res.status(500).json({ message: err.message || 'Server error' });
+  }
+});
+
+// Resend notification email (approval or rejection)
+router.post('/admin/doctor-applications/:id/resend-email', authAdmin, async (req, res) => {
+  try {
+    const app = await DoctorApplication.findById(req.params.id);
+    if (!app) return res.status(404).json({ message: 'Application not found' });
+
+    let emailResult;
+    if (app.status === 'approved') {
+      emailResult = await sendDoctorApprovalEmail(app.email, app.fullName);
+    } else if (app.status === 'rejected') {
+      emailResult = await sendDoctorRejectionEmail(app.email, app.fullName, app.rejectionReason || 'Information could not be verified.');
+    } else {
+      return res.status(400).json({ message: 'Application is still pending review.' });
+    }
+
+    res.json({ success: true, message: `Notification email dispatched to ${app.email}`, emailResult });
+  } catch (err) {
+    console.error('[admin/resend-email] Error:', err);
     res.status(500).json({ message: err.message || 'Server error' });
   }
 });

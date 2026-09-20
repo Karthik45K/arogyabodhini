@@ -137,10 +137,25 @@ const sendDoctorRejectionEmail = async (email, name, reason) => {
     console.log(`[EmailService] SMTP not configured. Doctor rejection email simulated for ${email} (Reason: ${reason})`);
     return { skipped: true };
   }
+  const textBody = `
+Dear Dr. ${name},
+
+Thank you for your interest in joining the Arogyabodhini Telemedicine network.
+
+After careful review of your submitted credentials, your application could not be approved at this time for the following reason:
+Reason: ${reason}
+
+If you believe this is an error or wish to provide updated documentation, you may re-apply through our registration portal.
+
+Best regards,
+Arogyabodhini Credentialing Team • Telemedicine Compliance Division
+`.trim();
+
   const mailOptions = {
     from: getFromAddress(),
     to: email,
-    subject: `Update on your Arogyabodhini Doctor Application`,
+    subject: `Arogyabodhini Application Update - Dr. ${name}`,
+    text: textBody,
     html: `
       <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; border: 1px solid #e2e8f0; border-radius: 8px; overflow: hidden;">
         <div style="background: #1565c0; color: white; padding: 20px; text-align: center;">
@@ -178,10 +193,33 @@ const sendDoctorApprovalEmail = async (email, name) => {
     console.log(`[EmailService] SMTP not configured. Doctor approval email simulated for ${email}`);
     return { skipped: true };
   }
+
+  const textBody = `
+Dear Dr. ${name},
+
+We are pleased to inform you that your medical license and credentials have been verified. Your doctor account is now active on the Arogyabodhini telemedicine platform.
+
+Your Account Credentials:
+- Login Portal: Doctor Portal
+- Registered Email: ${email}
+- Password: The password you created during registration
+
+Next Steps:
+1. Sign in to the Doctor Portal with your registered credentials.
+2. Toggle your status to Available to receive incoming patient teleconsultation calls.
+3. Conduct HD video consultations and issue digitally signed prescriptions.
+
+Need assistance? Contact our provider support at support@arogyabhodhini.com.
+
+Best regards,
+The Arogyabodhini Telemedicine Network
+`.trim();
+
   const mailOptions = {
     from: getFromAddress(),
     to: email,
-    subject: `Congratulations Dr. ${name}! Your Arogyabodhini Account is Approved`,
+    subject: `Arogyabodhini Doctor Account Approved - Dr. ${name}`,
+    text: textBody,
     html: `
       <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; border: 1px solid #e2e8f0; border-radius: 8px; overflow: hidden;">
         <div style="background: #1565c0; color: white; padding: 24px; text-align: center;">
