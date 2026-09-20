@@ -1,24 +1,30 @@
 const nodemailer = require('nodemailer');
 
-function getTransporter() {
+let transporterInstance = null;
+
+function createTransporter() {
   const user = process.env.EMAIL_USER || process.env.SMTP_USER;
   const pass = process.env.EMAIL_PASS || process.env.SMTP_PASS;
-
-  if (user && (user.includes('gmail.com') || process.env.SMTP_SERVICE === 'gmail')) {
-    return nodemailer.createTransport({
-      service: 'gmail',
-      auth: { user, pass },
-      tls: { rejectUnauthorized: false }
-    });
-  }
 
   return nodemailer.createTransport({
     host: process.env.SMTP_HOST || 'smtp.gmail.com',
     port: parseInt(process.env.SMTP_PORT || '587'),
     secure: process.env.SMTP_SECURE === 'true' || process.env.SMTP_PORT === '465',
     auth: { user, pass },
-    tls: { rejectUnauthorized: false }
+    tls: {
+      rejectUnauthorized: false,
+    },
+    connectionTimeout: 10000,
+    greetingTimeout: 10000,
+    socketTimeout: 15000,
   });
+}
+
+function getTransporter() {
+  if (!transporterInstance) {
+    transporterInstance = createTransporter();
+  }
+  return transporterInstance;
 }
 
 function isSmtpConfigured() {

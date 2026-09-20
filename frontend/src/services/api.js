@@ -11,7 +11,7 @@ const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000
 const BASE_URL = `${API_BASE_URL.replace(/\/$/, '')}/api`
 
 // Axios instance for components that need .get() / .post() style calls
-const api = axios.create({ baseURL: BASE_URL })
+const api = axios.create({ baseURL: BASE_URL, timeout: 15000 })
 export default api
 
 /**

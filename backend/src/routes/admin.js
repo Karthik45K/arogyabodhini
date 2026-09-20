@@ -79,7 +79,6 @@ router.post('/admin/doctor-applications/:id/approve', authAdmin, async (req, res
   try {
     const app = await DoctorApplication.findById(req.params.id);
     if (!app) return res.status(404).json({ message: 'Application not found' });
-    if (app.status === 'approved') return res.status(400).json({ message: 'Application is already approved' });
 
     // Check if doctor already exists
     let doctor = await Doctor.findOne({ email: app.email });
@@ -109,11 +108,12 @@ router.post('/admin/doctor-applications/:id/approve', authAdmin, async (req, res
     app.reviewedAt = new Date();
     await app.save();
 
-    // Send approval email with logged result
-    const emailResult = await sendDoctorApprovalEmail(app.email, app.fullName);
-    console.log('[admin/approve] Email dispatch status for', app.email, ':', emailResult);
+    // Trigger email non-blocking so the admin UI responds instantly
+    sendDoctorApprovalEmail(app.email, app.fullName)
+      .then(emailResult => console.log('[admin/approve] Email dispatch status for', app.email, ':', emailResult))
+      .catch(emailErr => console.error('[admin/approve] Email error for', app.email, ':', emailErr.message));
 
-    res.json({ success: true, message: 'Approved successfully', doctorId: app.doctorId, emailResult });
+    res.json({ success: true, message: 'Approved successfully', doctorId: app.doctorId });
   } catch (err) {
     console.error('[admin/approve] Server error:', err);
     res.status(500).json({ message: err.message || 'Server error' });
@@ -125,18 +125,18 @@ router.post('/admin/doctor-applications/:id/reject', authAdmin, async (req, res)
   try {
     const app = await DoctorApplication.findById(req.params.id);
     if (!app) return res.status(404).json({ message: 'Application not found' });
-    if (app.status === 'rejected') return res.status(400).json({ message: 'Application is already rejected' });
 
     app.status = 'rejected';
     app.rejectionReason = req.body.reason || 'Information could not be verified.';
     app.reviewedAt = new Date();
     await app.save();
 
-    // Send rejection email with logged result
-    const emailResult = await sendDoctorRejectionEmail(app.email, app.fullName, app.rejectionReason);
-    console.log('[admin/reject] Email dispatch status for', app.email, ':', emailResult);
+    // Trigger email non-blocking so the admin UI responds instantly
+    sendDoctorRejectionEmail(app.email, app.fullName, app.rejectionReason)
+      .then(emailResult => console.log('[admin/reject] Email dispatch status for', app.email, ':', emailResult))
+      .catch(emailErr => console.error('[admin/reject] Email error for', app.email, ':', emailErr.message));
 
-    res.json({ success: true, message: 'Rejected successfully', emailResult });
+    res.json({ success: true, message: 'Rejected successfully' });
   } catch (err) {
     console.error('[admin/reject] Server error:', err);
     res.status(500).json({ message: err.message || 'Server error' });

@@ -110,7 +110,8 @@ function AdminDashboard({ token, setToken }) {
   };
 
   const openRejectModal = (app) => {
-    setRejectReason('');
+    setRejectReason(app?.rejectionReason || '');
+    setIsProcessing(false);
     setIsRejectModalOpen(true);
   };
 
@@ -703,27 +704,23 @@ function AdminDashboard({ token, setToken }) {
             >
               Close
             </button>
-            {selectedApp?.status === 'pending' && (
-              <>
-                <button
-                  onClick={() => openRejectModal(selectedApp)}
-                  style={{ padding: '12px 24px', background: '#fee2e2', color: '#dc2626', border: 'none', borderRadius: '8px', fontWeight: 600, cursor: 'pointer', transition: 'all 0.2s' }}
-                  onMouseOver={e => e.currentTarget.style.background = '#fecaca'}
-                  onMouseOut={e => e.currentTarget.style.background = '#fee2e2'}
-                >
-                  Reject Application
-                </button>
-                <button
-                  disabled={isProcessing}
-                  onClick={() => handleApprove(selectedApp._id)}
-                  style={{ padding: '12px 24px', background: '#22c55e', color: 'white', border: 'none', borderRadius: '8px', fontWeight: 600, cursor: 'pointer', transition: 'all 0.2s', boxShadow: '0 4px 6px -1px rgba(34, 197, 94, 0.3)' }}
-                  onMouseOver={e => e.currentTarget.style.background = '#16a34a'}
-                  onMouseOut={e => e.currentTarget.style.background = '#22c55e'}
-                >
-                  {isProcessing ? 'Provisioning...' : 'Approve & Dispatch Credentials'}
-                </button>
-              </>
-            )}
+            <button
+              onClick={() => openRejectModal(selectedApp)}
+              style={{ padding: '12px 24px', background: '#fee2e2', color: '#dc2626', border: 'none', borderRadius: '8px', fontWeight: 600, cursor: 'pointer', transition: 'all 0.2s' }}
+              onMouseOver={e => e.currentTarget.style.background = '#fecaca'}
+              onMouseOut={e => e.currentTarget.style.background = '#fee2e2'}
+            >
+              {selectedApp?.status === 'rejected' ? 'Update Rejection Reason & Notify' : 'Reject Application'}
+            </button>
+            <button
+              disabled={isProcessing}
+              onClick={() => handleApprove(selectedApp._id)}
+              style={{ padding: '12px 24px', background: '#22c55e', color: 'white', border: 'none', borderRadius: '8px', fontWeight: 600, cursor: 'pointer', transition: 'all 0.2s', boxShadow: '0 4px 6px -1px rgba(34, 197, 94, 0.3)' }}
+              onMouseOver={e => e.currentTarget.style.background = '#16a34a'}
+              onMouseOut={e => e.currentTarget.style.background = '#22c55e'}
+            >
+              {isProcessing ? 'Provisioning...' : (selectedApp?.status === 'approved' ? 'Re-provision & Notify' : 'Approve & Dispatch Credentials')}
+            </button>
           </>
         }
       >
@@ -774,12 +771,18 @@ function AdminDashboard({ token, setToken }) {
       {/* Rejection Reason Modal */}
       <Modal
         isOpen={isRejectModalOpen}
-        onClose={() => setIsRejectModalOpen(false)}
+        onClose={() => {
+          setIsRejectModalOpen(false);
+          setIsProcessing(false);
+        }}
         title="Reject Application & Notify Doctor"
         actions={
           <>
             <button
-              onClick={() => setIsRejectModalOpen(false)}
+              onClick={() => {
+                setIsRejectModalOpen(false);
+                setIsProcessing(false);
+              }}
               style={{ padding: '12px 24px', background: '#f1f5f9', color: '#475569', border: 'none', borderRadius: '8px', fontWeight: 600, cursor: 'pointer' }}
             >
               Cancel
