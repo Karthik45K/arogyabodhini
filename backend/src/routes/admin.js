@@ -109,12 +109,11 @@ router.post('/admin/doctor-applications/:id/approve', authAdmin, async (req, res
     app.reviewedAt = new Date();
     await app.save();
 
-    // Send email non-blocking so email dispatch issues never fail the approval
-    sendDoctorApprovalEmail(app.email, app.fullName).catch(err => {
-      console.warn('[admin/approve] Email dispatch notice:', err.message);
-    });
+    // Send approval email with logged result
+    const emailResult = await sendDoctorApprovalEmail(app.email, app.fullName);
+    console.log('[admin/approve] Email dispatch status for', app.email, ':', emailResult);
 
-    res.json({ success: true, message: 'Approved successfully', doctorId: app.doctorId });
+    res.json({ success: true, message: 'Approved successfully', doctorId: app.doctorId, emailResult });
   } catch (err) {
     console.error('[admin/approve] Server error:', err);
     res.status(500).json({ message: err.message || 'Server error' });
@@ -133,12 +132,11 @@ router.post('/admin/doctor-applications/:id/reject', authAdmin, async (req, res)
     app.reviewedAt = new Date();
     await app.save();
 
-    // Send email non-blocking
-    sendDoctorRejectionEmail(app.email, app.fullName, app.rejectionReason).catch(err => {
-      console.warn('[admin/reject] Email dispatch notice:', err.message);
-    });
+    // Send rejection email with logged result
+    const emailResult = await sendDoctorRejectionEmail(app.email, app.fullName, app.rejectionReason);
+    console.log('[admin/reject] Email dispatch status for', app.email, ':', emailResult);
 
-    res.json({ success: true, message: 'Rejected successfully' });
+    res.json({ success: true, message: 'Rejected successfully', emailResult });
   } catch (err) {
     console.error('[admin/reject] Server error:', err);
     res.status(500).json({ message: err.message || 'Server error' });
