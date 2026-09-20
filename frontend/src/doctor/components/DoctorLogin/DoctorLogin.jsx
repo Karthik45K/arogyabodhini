@@ -1,6 +1,5 @@
 import React, { useState } from 'react';
 import { useDoctorAuth } from '../../context/DoctorContext';
-import { getDemoCredentials } from '../../data/doctorAccounts';
 import { useNavigate } from 'react-router-dom';
 import './DoctorLogin.css';
 
@@ -9,17 +8,11 @@ const DoctorLogin = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPass, setShowPass] = useState(false);
-  const demo = getDemoCredentials();
   const navigate = useNavigate();
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     await login(email.trim(), password);
-  };
-
-  const fillDemo = () => {
-    setEmail(demo.email);
-    setPassword(demo.password);
   };
 
   return (
@@ -95,20 +88,7 @@ const DoctorLogin = () => {
               'Sign In ➔'
             )}
           </button>
-
-          <button
-            type="button"
-            className="dr-login-demo-btn"
-            onClick={fillDemo}
-          >
-            Use Demo Credentials
-          </button>
-
         </form>
-
-        <p className="dr-login-demo-hint">
-          Demo: <strong>{demo.email}</strong> / Doctor@123
-        </p>
 
         <div style={{ marginTop: '20px', display: 'flex', flexDirection: 'column', gap: '10px' }}>
           <button className="dr-login-switch" onClick={() => navigate('/doctor/register')} style={{ color: '#1565c0', fontWeight: 'bold' }}>

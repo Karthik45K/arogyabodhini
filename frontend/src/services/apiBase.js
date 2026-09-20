@@ -2,8 +2,16 @@
  * Shared API base URL & Server Wake-up Helper.
  * Supports Render (Backend free tier cold starts) & Netlify (Frontend SPA).
  */
-const envUrl = import.meta.env.VITE_API_BASE_URL || ''
-const configured = envUrl ? envUrl.replace(/\/$/, '') : (import.meta.env.DEV ? 'http://localhost:5000' : '')
+const DEFAULT_RENDER_BACKEND = 'https://arogyabodhini-backend.onrender.com'
+
+const runtimeUrl = (typeof window !== 'undefined' && window.__API_BASE_URL__) ||
+  import.meta.env.VITE_API_BASE_URL ||
+  (typeof window !== 'undefined' && localStorage.getItem('ab_backend_url')) ||
+  ''
+
+const configured = runtimeUrl
+  ? runtimeUrl.replace(/\/$/, '')
+  : (import.meta.env.DEV ? 'http://localhost:5000' : DEFAULT_RENDER_BACKEND)
 
 export const API_BASE = configured
 

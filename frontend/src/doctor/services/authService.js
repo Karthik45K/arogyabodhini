@@ -4,7 +4,6 @@
  */
 
 import { apiUrl } from '../../services/apiBase'
-import DOCTOR_ACCOUNTS from '../data/doctorAccounts'
 
 const SESSION_KEY = 'ab_doctor_session'
 const TOKEN_KEY = 'ab_doctor_token'
@@ -21,37 +20,35 @@ export const authService = {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email, password }),
       })
-      const payload = await response.json()
+      const payload = await response.json().catch(() => null)
 
-      if (response.ok && payload.success && payload.doctor) {
+      if (response.ok && payload?.success && payload?.doctor && payload?.token) {
         try { localStorage.setItem(SESSION_KEY, JSON.stringify(payload.doctor)) } catch {}
-        if (payload.token) localStorage.setItem(TOKEN_KEY, payload.token)
+        localStorage.setItem(TOKEN_KEY, payload.token)
         return { success: true, doctor: payload.doctor }
       }
-    } catch {}
 
-    const account = DOCTOR_ACCOUNTS.find(
-      candidate => candidate.email.toLowerCase() === email.toLowerCase() && candidate.password === password
-    )
-    if (!account) return { success: false, error: 'Invalid email or password.' }
-    const session = { ...account, loginAt: new Date().toISOString() }
-    localStorage.removeItem(TOKEN_KEY)
-    try { localStorage.setItem(SESSION_KEY, JSON.stringify(session)) } catch {}
-    return { success: true, doctor: session }
+      if (payload?.message) {
+        return { success: false, error: payload.message }
+      }
+      return { success: false, error: 'Invalid email or password. Please try again.' }
+    } catch (err) {
+      return { success: false, error: 'Unable to connect to healthcare server. Please check your connection or wait a moment for the server to activate.' }
+    }
   },
 
   /** Restore session from localStorage */
   restoreSession() {
     try {
       const raw = localStorage.getItem(SESSION_KEY)
-      if (!raw) return null
-      const session = JSON.parse(raw)
-      if (session?.name === 'Dr. Priya Sharma' && session.id === 'doc-priya-sharma') {
-        const normalized = { ...session, id: 'doc-001' }
-        localStorage.setItem(SESSION_KEY, JSON.stringify(normalized))
-        return normalized
+      const token = localStorage.getItem(TOKEN_KEY)
+      // Require valid token to avoid unauthorized poll loops
+      if (!raw || !token) {
+        localStorage.removeItem(SESSION_KEY)
+        localStorage.removeItem(TOKEN_KEY)
+        return null
       }
-      return session
+      return JSON.parse(raw)
     } catch { return null }
   },
 

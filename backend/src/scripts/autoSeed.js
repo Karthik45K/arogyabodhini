@@ -32,8 +32,8 @@ const getSeededDoctorEmail = (doctor) => {
 }
 
 const provisionDoctorAccess = async () => {
-  const defaultPassword = process.env.DOCTOR_DEFAULT_PASSWORD
-  const defaultPasswordHash = defaultPassword ? hashPassword(defaultPassword) : null
+  const defaultPassword = process.env.DOCTOR_DEFAULT_PASSWORD || 'Doctor@123'
+  const defaultPasswordHash = hashPassword(defaultPassword)
   const doctors = await Doctor.find({}).select('_id id name entry_id email passwordHash availability availabilityStatus').lean()
 
   const operations = doctors.map((doctor) => {
