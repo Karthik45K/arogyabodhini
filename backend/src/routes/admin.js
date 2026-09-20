@@ -6,6 +6,7 @@ const Admin = require('../models/Admin');
 const DoctorApplication = require('../models/DoctorApplication');
 const Doctor = require('../models/Doctor');
 const mongoose = require('mongoose');
+const { sendDoctorRejectionEmail, sendDoctorApprovalEmail } = require('../services/emailService');
 
 // Admin Login handler
 const handleAdminLogin = async (req, res) => {
@@ -77,54 +78,70 @@ router.get('/admin/doctor-applications', authAdmin, async (req, res) => {
 router.post('/admin/doctor-applications/:id/approve', authAdmin, async (req, res) => {
   try {
     const app = await DoctorApplication.findById(req.params.id);
-    if (!app || app.status !== 'pending') return res.status(400).json({ message: 'Invalid application' });
+    if (!app) return res.status(404).json({ message: 'Application not found' });
+    if (app.status === 'approved') return res.status(400).json({ message: 'Application is already approved' });
 
-    // Create doctor
-    const newDoctor = new Doctor({
-      entry_id: new mongoose.Types.ObjectId().toString(),
-      name: app.fullName,
-      email: app.email,
-      phone: app.phone,
-      passwordHash: app.passwordHash,
-      specialty: app.specialty,
-      experience_years: app.experienceYears,
-      bangalore_location: app.address,
-      availabilityStatus: 'available',
-      fee: app.consultationFee
-    });
-    await newDoctor.save();
+    // Check if doctor already exists
+    let doctor = await Doctor.findOne({ email: app.email });
+    if (!doctor) {
+      doctor = new Doctor({
+        entry_id: new mongoose.Types.ObjectId().toString(),
+        name: app.fullName,
+        email: app.email,
+        phone: app.phone,
+        passwordHash: app.passwordHash,
+        specialty: app.specialty,
+        experience_years: app.experienceYears || 1,
+        bangalore_location: app.address || 'Karnataka, India',
+        availabilityStatus: 'available',
+        fee: app.consultationFee || 299
+      });
+      await doctor.save();
+    } else {
+      doctor.availabilityStatus = 'available';
+      if (app.passwordHash) doctor.passwordHash = app.passwordHash;
+      if (app.specialty) doctor.specialty = app.specialty;
+      await doctor.save();
+    }
 
     app.status = 'approved';
-    app.doctorId = newDoctor._id.toString();
+    app.doctorId = doctor._id.toString();
     app.reviewedAt = new Date();
     await app.save();
-    
-    await sendDoctorApprovalEmail(app.email, app.fullName);
 
-    res.json({ message: 'Approved successfully', doctorId: app.doctorId });
+    // Send email non-blocking so email dispatch issues never fail the approval
+    sendDoctorApprovalEmail(app.email, app.fullName).catch(err => {
+      console.warn('[admin/approve] Email dispatch notice:', err.message);
+    });
+
+    res.json({ success: true, message: 'Approved successfully', doctorId: app.doctorId });
   } catch (err) {
-    res.status(500).json({ message: 'Server error' });
+    console.error('[admin/approve] Server error:', err);
+    res.status(500).json({ message: err.message || 'Server error' });
   }
 });
-
-const { sendDoctorRejectionEmail, sendDoctorApprovalEmail } = require('../services/emailService');
 
 // Reject application
 router.post('/admin/doctor-applications/:id/reject', authAdmin, async (req, res) => {
   try {
     const app = await DoctorApplication.findById(req.params.id);
-    if (!app || app.status !== 'pending') return res.status(400).json({ message: 'Invalid application' });
+    if (!app) return res.status(404).json({ message: 'Application not found' });
+    if (app.status === 'rejected') return res.status(400).json({ message: 'Application is already rejected' });
 
     app.status = 'rejected';
-    app.rejectionReason = req.body.reason || 'No reason provided';
+    app.rejectionReason = req.body.reason || 'Information could not be verified.';
     app.reviewedAt = new Date();
     await app.save();
-    
-    await sendDoctorRejectionEmail(app.email, app.fullName, app.rejectionReason);
 
-    res.json({ message: 'Rejected successfully' });
+    // Send email non-blocking
+    sendDoctorRejectionEmail(app.email, app.fullName, app.rejectionReason).catch(err => {
+      console.warn('[admin/reject] Email dispatch notice:', err.message);
+    });
+
+    res.json({ success: true, message: 'Rejected successfully' });
   } catch (err) {
-    res.status(500).json({ message: 'Server error' });
+    console.error('[admin/reject] Server error:', err);
+    res.status(500).json({ message: err.message || 'Server error' });
   }
 });
 

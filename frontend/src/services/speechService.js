@@ -53,6 +53,18 @@ const ERROR_MESSAGES = {
   'language-not-supported': 'This language is not supported by your browser\'s speech recognition.',
 }
 
+// ─── Language normalization helper ─────────────────────────────────────────
+export function normalizeLanguageCode(code) {
+  if (!code) return 'en-IN'
+  const c = String(code).toLowerCase().trim()
+  if (c.startsWith('kn')) return 'kn-IN'
+  if (c.startsWith('ta')) return 'ta-IN'
+  if (c.startsWith('te')) return 'te-IN'
+  if (c.startsWith('hi')) return 'hi-IN'
+  if (c.startsWith('en')) return 'en-IN'
+  return code
+}
+
 // ─── Web Speech API session factory ────────────────────────────────────────
 const _createWebSpeechSession = (config) => {
   const RecognitionClass = _getSpeechRecognitionClass()
@@ -62,10 +74,12 @@ const _createWebSpeechSession = (config) => {
 
   const recognition = new RecognitionClass()
 
-  recognition.lang             = config.lang || 'en-IN'
+  recognition.lang             = normalizeLanguageCode(config.lang)
   recognition.continuous       = config.continuous ?? true
   recognition.interimResults   = config.interimResults ?? true
   recognition.maxAlternatives  = 1
+
+  console.log('[SpeechService] Initialized recognition session with lang:', recognition.lang)
 
   // ── Event handlers ──────────────────────────────────────────────────────
   recognition.onstart = () => {
@@ -91,10 +105,17 @@ const _createWebSpeechSession = (config) => {
 
   recognition.onerror = (event) => {
     const type = event.error
-    const msg  = ERROR_MESSAGES[type]
-    if (msg !== null) {   // null = intentional abort, skip
-      config.onError?.(type, msg || `Speech recognition error: ${type}`)
+    // In regional languages (Kannada, Tamil, Telugu), silence timeouts fire 'no-speech' quickly.
+    // Do NOT treat silence or aborted as fatal application errors.
+    if (type === 'no-speech') {
+      console.log('[SpeechService] No speech detected in silence window; session remains active.')
+      return
     }
+    if (type === 'aborted') {
+      return
+    }
+    const msg = ERROR_MESSAGES[type]
+    config.onError?.(type, msg || `Speech recognition error: ${type}`)
   }
 
   recognition.onend = () => {
@@ -103,9 +124,27 @@ const _createWebSpeechSession = (config) => {
 
   // ── Public session interface ─────────────────────────────────────────────
   return {
-    start: () => recognition.start(),
-    stop:  () => recognition.stop(),
-    abort: () => recognition.abort(),
+    start: () => {
+      try {
+        recognition.start()
+      } catch (e) {
+        console.warn('[SpeechService] start() notice:', e.message)
+      }
+    },
+    stop:  () => {
+      try {
+        recognition.stop()
+      } catch (e) {
+        console.warn('[SpeechService] stop() notice:', e.message)
+      }
+    },
+    abort: () => {
+      try {
+        recognition.abort()
+      } catch (e) {
+        console.warn('[SpeechService] abort() notice:', e.message)
+      }
+    },
   }
 }
 

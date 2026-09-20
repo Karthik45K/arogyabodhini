@@ -66,6 +66,7 @@ function AdminDashboard({ token, setToken }) {
   const [rejectReason, setRejectReason] = useState('');
   const [search, setSearch] = useState('');
   const [filter, setFilter] = useState('All');
+  const [sidebarOpen, setSidebarOpen] = useState(false);
 
   const fetchData = async () => {
     try {
@@ -144,16 +145,27 @@ function AdminDashboard({ token, setToken }) {
 
   return (
     <div className="admin-container">
+      {/* Mobile Sidebar Backdrop */}
+      {sidebarOpen && (
+        <div
+          className="admin-sidebar-backdrop"
+          onClick={() => setSidebarOpen(false)}
+        />
+      )}
+
       {/* Sidebar */}
-      <aside className="admin-sidebar">
-        <div className="admin-sidebar-logo">
-          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{marginRight: '8px'}}><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>
-          Arogyabodhini
+      <aside className={`admin-sidebar ${sidebarOpen ? 'admin-sidebar--open' : ''}`}>
+        <div className="admin-sidebar-header">
+          <div className="admin-sidebar-logo">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{marginRight: '8px'}}><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>
+            Arogyabodhini
+          </div>
+          <button className="admin-sidebar-close" onClick={() => setSidebarOpen(false)}>✕</button>
         </div>
         <nav className="admin-nav">
-          <button className="admin-nav-item active">Dashboard Overview</button>
-          <button className="admin-nav-item">Doctor Provisioning</button>
-          <button className="admin-nav-item">System Analytics</button>
+          <button className="admin-nav-item active" onClick={() => setSidebarOpen(false)}>Dashboard Overview</button>
+          <button className="admin-nav-item" onClick={() => setSidebarOpen(false)}>Doctor Provisioning</button>
+          <button className="admin-nav-item" onClick={() => setSidebarOpen(false)}>System Analytics</button>
         </nav>
         <button className="admin-logout-btn" onClick={handleLogout}>Secure Logout</button>
       </aside>
@@ -161,10 +173,19 @@ function AdminDashboard({ token, setToken }) {
       {/* Main Content */}
       <div className="admin-main">
         <header className="admin-header">
-          <h2>Command Center</h2>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
+            <button
+              className="admin-mobile-menu-btn"
+              onClick={() => setSidebarOpen(prev => !prev)}
+              aria-label="Toggle navigation menu"
+            >
+              ☰
+            </button>
+            <h2>Command Center</h2>
+          </div>
+          <div className="admin-header-status">
             <span style={{ height: '8px', width: '8px', borderRadius: '50%', background: '#22c55e', display: 'inline-block' }}></span>
-            <span style={{ color: '#475569', fontSize: '0.9rem', fontWeight: 600 }}>System Operational</span>
+            <span>System Operational</span>
           </div>
         </header>
 
@@ -189,9 +210,9 @@ function AdminDashboard({ token, setToken }) {
             </div>
           </div>
 
-          <div style={{ display: 'flex', gap: '40px', marginBottom: '40px' }}>
-            <div style={{ width: '100%', maxWidth: '350px', background: 'white', padding: '32px', borderRadius: '12px', boxShadow: '0 4px 15px rgba(0,0,0,0.02)', border: '1px solid #e2e8f0' }}>
-              <h3 style={{marginBottom: '24px', color: '#0f172a', fontSize: '1.1rem', fontWeight: 700}}>Application Distribution</h3>
+          <div className="admin-chart-row">
+            <div className="admin-chart-card">
+              <h3 style={{marginBottom: '20px', color: '#0f172a', fontSize: '1.05rem', fontWeight: 700}}>Application Distribution</h3>
               <Pie data={{
                 labels: ['Approved', 'Pending', 'Rejected'],
                 datasets: [{
@@ -200,27 +221,20 @@ function AdminDashboard({ token, setToken }) {
                   borderWidth: 0,
                   hoverOffset: 4
                 }]
-              }} options={{ plugins: { legend: { position: 'bottom', labels: { padding: 20, font: { family: 'Inter', size: 13, weight: '500' } } } } }} />
+              }} options={{ plugins: { legend: { position: 'bottom', labels: { padding: 16, font: { family: 'Inter', size: 12, weight: '500' } } } } }} />
             </div>
           </div>
 
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px', flexWrap: 'wrap', gap: '16px' }}>
-            <h3 style={{ color: '#0f172a', fontSize: '1.25rem', margin: 0, fontWeight: 700 }}>Provisioning Queue</h3>
+          <div className="admin-queue-header">
+            <h3 style={{ color: '#0f172a', fontSize: '1.2rem', margin: 0, fontWeight: 700 }}>Provisioning Queue</h3>
             
-            <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
+            <div className="admin-queue-controls">
               <input
                 type="text"
                 placeholder="Search name, email, specialty..."
                 value={search}
                 onChange={e => setSearch(e.target.value)}
-                style={{
-                  padding: '8px 16px',
-                  borderRadius: '99px',
-                  border: '1px solid #cbd5e1',
-                  outline: 'none',
-                  fontSize: '0.85rem',
-                  minWidth: '240px'
-                }}
+                className="admin-search-input"
               />
               <div className="admin-filter-group">
                 {['All', 'Pending', 'Approved', 'Rejected'].map(f => (
@@ -292,14 +306,14 @@ function AdminDashboard({ token, setToken }) {
         }
       >
         {selectedApp && (
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px', background: '#f8fafc', padding: '24px', borderRadius: '12px', border: '1px solid #e2e8f0' }}>
+          <div className="admin-modal-grid">
             <div><strong style={{ color: '#64748b', fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Full Name</strong><br/> <span style={{fontSize:'1.1rem', color:'#0f172a', fontWeight:600}}>{selectedApp.fullName}</span></div>
             <div><strong style={{ color: '#64748b', fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Email Address</strong><br/> <span style={{color:'#334155', fontWeight:500}}>{selectedApp.email}</span></div>
             <div><strong style={{ color: '#64748b', fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Phone Number</strong><br/> <span style={{color:'#334155', fontWeight:500}}>{selectedApp.phone}</span></div>
             <div><strong style={{ color: '#64748b', fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Specialty</strong><br/> <span style={{color:'#334155', fontWeight:500}}>{selectedApp.specialty}</span></div>
             <div><strong style={{ color: '#64748b', fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Clinical Experience</strong><br/> <span style={{color:'#334155', fontWeight:500}}>{selectedApp.experienceYears} Years</span></div>
             <div><strong style={{ color: '#64748b', fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.5px' }}>License Number</strong><br/> <span style={{fontFamily:'monospace', background:'#e2e8f0', padding:'2px 6px', borderRadius:'4px', color:'#0f172a', fontWeight:600}}>{selectedApp.registrationNumber}</span></div>
-            <div style={{ gridColumn: 'span 2' }}><strong style={{ color: '#64748b', fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Clinic / Hospital Details</strong><br/> <span style={{color:'#334155', fontWeight:500}}>{selectedApp.clinicName} — {selectedApp.address}</span></div>
+            <div className="admin-modal-fullwidth"><strong style={{ color: '#64748b', fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Clinic / Hospital Details</strong><br/> <span style={{color:'#334155', fontWeight:500}}>{selectedApp.clinicName} — {selectedApp.address}</span></div>
           </div>
         )}
       </Modal>

@@ -30,11 +30,13 @@ const useSpeechRecognition = ({ onFinalResult } = {}) => {
   const [error,         setError]         = useState(null)
 
   const sessionRef     = useRef(null)
+  const shouldListenRef= useRef(false)
   const isSupported    = speechService.isSupported()
 
   // Clean up on unmount
   useEffect(() => {
     return () => {
+      shouldListenRef.current = false
       sessionRef.current?.abort()
     }
   }, [])
@@ -46,6 +48,7 @@ const useSpeechRecognition = ({ onFinalResult } = {}) => {
     }
 
     // Clean up any existing session
+    shouldListenRef.current = true
     sessionRef.current?.abort()
     setError(null)
     setInterimText('')
@@ -71,18 +74,28 @@ const useSpeechRecognition = ({ onFinalResult } = {}) => {
         },
 
         onEnd: () => {
+          if (shouldListenRef.current) {
+            try {
+              session.start()
+              return
+            } catch {
+              // Browser may require user gesture before restarting
+            }
+          }
           setIsListening(false)
           setInterimText('')
-          // Brief processing state so the UI doesn't snap immediately
           setIsProcessing(true)
-          setTimeout(() => setIsProcessing(false), 600)
+          setTimeout(() => setIsProcessing(false), 500)
         },
 
         onError: (type, message) => {
-          setIsListening(false)
-          setIsProcessing(false)
-          setInterimText('')
-          setError(message)
+          if (type !== 'no-speech' && type !== 'aborted') {
+            shouldListenRef.current = false
+            setIsListening(false)
+            setIsProcessing(false)
+            setInterimText('')
+            setError(message)
+          }
         },
       })
 
@@ -90,14 +103,15 @@ const useSpeechRecognition = ({ onFinalResult } = {}) => {
       session.start()
 
     } catch (err) {
+      shouldListenRef.current = false
       setError(err.message || 'Failed to start voice recognition.')
       setIsListening(false)
     }
   }, [isSupported, onFinalResult])
 
   const stopListening = useCallback(() => {
+    shouldListenRef.current = false
     sessionRef.current?.stop()
-    // onEnd callback will handle state update
   }, [])
 
   const clearError = useCallback(() => setError(null), [])

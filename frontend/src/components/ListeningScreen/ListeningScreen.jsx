@@ -15,6 +15,14 @@ const ListeningScreen = ({ lang, onDone, onCancel }) => {
     })
   }, [])
 
+  const resolveBcp47 = (l) => {
+    if (!l) return 'en-IN'
+    if (typeof l === 'object' && l.bcp47) return l.bcp47
+    const code = typeof l === 'object' ? l.code : l
+    const map = { kn: 'kn-IN', ta: 'ta-IN', te: 'te-IN', hi: 'hi-IN', en: 'en-IN' }
+    return map[code] || 'en-IN'
+  }
+
   const {
     isSupported, isListening, isProcessing,
     interimText, error: speechError,
@@ -22,7 +30,7 @@ const ListeningScreen = ({ lang, onDone, onCancel }) => {
   } = useSpeechRecognition({ onFinalResult: handleFinalResult })
 
   useEffect(() => {
-    if (isSupported) startListening(lang.bcp47)
+    if (isSupported) startListening(resolveBcp47(lang))
     return () => { stopListening() }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
@@ -62,7 +70,7 @@ const ListeningScreen = ({ lang, onDone, onCancel }) => {
             <BilingualText tKey="listening" as="span" size="md" />
           </p>
           <p className="listening-sublabel">
-            {en('speakClearly')} — {lang.nativeLabel}
+            {en('speakClearly')} — {lang?.nativeLabel || lang?.label || 'Voice Mode'}
           </p>
         </>
       ) : isProcessing ? (
@@ -70,9 +78,14 @@ const ListeningScreen = ({ lang, onDone, onCancel }) => {
           <BilingualText tKey="processingVoice" as="span" size="md" />
         </p>
       ) : (
-        <p className="listening-status">
-          <BilingualText tKey="ready" as="span" size="md" />
-        </p>
+        <>
+          <p className="listening-status">
+            <BilingualText tKey="ready" as="span" size="md" />
+          </p>
+          <p className="listening-sublabel">
+            Tap Speak Again below to continue in {lang?.nativeLabel || lang?.label || 'voice mode'}
+          </p>
+        </>
       )}
 
       {/* Wave */}
@@ -113,18 +126,28 @@ const ListeningScreen = ({ lang, onDone, onCancel }) => {
             <BilingualText tKey="stopBtn" as="span" size="sm" />
           </button>
         ) : (
-          transcript && (
-            <button id="submit-transcript-btn" className="listening-btn listening-btn--submit"
-              onClick={() => onDone(transcript.trim())} disabled={isProcessing}>
-              <svg width="22" height="22" viewBox="0 0 24 24" fill="none"
-                stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"
-                strokeLinejoin="round" aria-hidden="true">
-                <circle cx="11" cy="11" r="8"/>
-                <line x1="21" y1="21" x2="16.65" y2="16.65"/>
-              </svg>
-              <BilingualText tKey="analyzeBtn" as="span" size="sm" />
+          <>
+            <button
+              id="restart-listening-btn"
+              type="button"
+              className="listening-btn listening-btn--restart"
+              onClick={() => startListening(resolveBcp47(lang))}
+            >
+              🎙️ Speak Again
             </button>
-          )
+            {transcript && (
+              <button id="submit-transcript-btn" className="listening-btn listening-btn--submit"
+                onClick={() => onDone(transcript.trim())} disabled={isProcessing}>
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none"
+                  stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"
+                  strokeLinejoin="round" aria-hidden="true">
+                  <circle cx="11" cy="11" r="8"/>
+                  <line x1="21" y1="21" x2="16.65" y2="16.65"/>
+                </svg>
+                <BilingualText tKey="analyzeBtn" as="span" size="sm" />
+              </button>
+            )}
+          </>
         )}
         <button id="cancel-listening-btn" className="listening-btn listening-btn--cancel"
           onClick={onCancel}>

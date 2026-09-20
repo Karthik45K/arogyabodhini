@@ -10,9 +10,18 @@ const transporter = nodemailer.createTransport({
   },
 });
 
+function isSmtpConfigured() {
+  const user = process.env.EMAIL_USER;
+  const pass = process.env.EMAIL_PASS;
+  if (!user || !pass) return false;
+  if (user === 'your_email@gmail.com' || user === 'dummy@gmail.com') return false;
+  if (pass === 'dummypass' || pass === 'your_email_password') return false;
+  return true;
+}
+
 const sendPrescriptionEmail = async (prescription) => {
-  if (process.env.EMAIL_USER === 'your_email@gmail.com' || !process.env.EMAIL_USER) {
-    console.log('[EmailService] SMTP not configured. Skipping email dispatch.');
+  if (!isSmtpConfigured()) {
+    console.log('[EmailService] SMTP not configured. Skipping email dispatch to:', prescription.patientEmail);
     return;
   }
 
@@ -96,7 +105,10 @@ const sendPrescriptionEmail = async (prescription) => {
 };
 
 const sendDoctorRejectionEmail = async (email, name, reason) => {
-  if (process.env.EMAIL_USER === 'your_email@gmail.com' || !process.env.EMAIL_USER) return;
+  if (!isSmtpConfigured()) {
+    console.log(`[EmailService] SMTP not configured. Doctor rejection email simulated for ${email} (Reason: ${reason})`);
+    return;
+  }
   const mailOptions = {
     from: process.env.EMAIL_FROM || '"Arogyabodhini Healthcare" <no-reply@arogyabhodhini.com>',
     to: email,
@@ -121,13 +133,17 @@ const sendDoctorRejectionEmail = async (email, name, reason) => {
   };
   try {
     await transporter.sendMail(mailOptions);
+    console.log(`[EmailService] Rejection email successfully dispatched to ${email}`);
   } catch (err) {
     console.error(`[EmailService] Error sending rejection email to ${email}:`, err.message);
   }
 };
 
 const sendDoctorApprovalEmail = async (email, name) => {
-  if (process.env.EMAIL_USER === 'your_email@gmail.com' || !process.env.EMAIL_USER) return;
+  if (!isSmtpConfigured()) {
+    console.log(`[EmailService] SMTP not configured. Doctor approval email simulated for ${email}`);
+    return;
+  }
   const mailOptions = {
     from: process.env.EMAIL_FROM || '"Arogyabodhini Healthcare" <no-reply@arogyabhodhini.com>',
     to: email,
@@ -148,6 +164,7 @@ const sendDoctorApprovalEmail = async (email, name) => {
   };
   try {
     await transporter.sendMail(mailOptions);
+    console.log(`[EmailService] Approval email successfully dispatched to ${email}`);
   } catch (err) {
     console.error(`[EmailService] Error sending approval email to ${email}:`, err.message);
   }

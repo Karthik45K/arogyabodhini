@@ -120,8 +120,9 @@ const VideoCallRoom = ({ consultationId, role = 'doctor', userName = 'User', aut
         },
 
         scenario: {
-          mode: ZegoUIKitPrebuilt.OneONoneCall,
+          mode: ZegoUIKitPrebuilt.GroupCall,
         },
+        autoLeaveRoomWhenOnlySelfInRoom: false,
 
         turnOnCameraWhenJoining:     true,
         turnOnMicrophoneWhenJoining: true,
