@@ -135,19 +135,28 @@ const PatientAccount = ({ onClose, onAuthenticated, initialMode = 'login', initi
       return
     }
 
-    const meds = item.prescription?.medicines || []
+    const rx = item.prescription || {}
+    const meds = rx.medicines || item.notes?.medicines || item.medicines || []
     const medicinesRows = meds.map((m, i) => `
       <tr>
         <td style="padding: 10px; border-bottom: 1px solid #e2e8f0; font-weight: 600;">${i + 1}</td>
         <td style="padding: 10px; border-bottom: 1px solid #e2e8f0; font-weight: 700; color: #0f172a;">${m.name}</td>
-        <td style="padding: 10px; border-bottom: 1px solid #e2e8f0;">${m.dosage}</td>
-        <td style="padding: 10px; border-bottom: 1px solid #e2e8f0;">${m.frequency}</td>
-        <td style="padding: 10px; border-bottom: 1px solid #e2e8f0;">${m.duration}</td>
+        <td style="padding: 10px; border-bottom: 1px solid #e2e8f0;">${m.dosage || '-'}</td>
+        <td style="padding: 10px; border-bottom: 1px solid #e2e8f0;">${m.frequency || '-'}</td>
+        <td style="padding: 10px; border-bottom: 1px solid #e2e8f0;">${m.duration || '-'}</td>
       </tr>
     `).join('')
 
-    const sigHash = item.prescription?.digitalSignatureHash || 
+    const sigHash = rx.digitalSignatureHash || item.digitalSignatureHash || 
       `RX-SIG-${Math.random().toString(36).substring(2, 8).toUpperCase()}-${Date.now().toString(36).toUpperCase()}`
+
+    const doctorName = item.doctorName || item.doctor?.name || rx.doctorName || 'Doctor'
+    const doctorSpecialty = item.doctorSpecialty || rx.doctorSpec || item.doctor?.spec || 'Specialist'
+    const diagnosis = rx.diagnosis || item.notes?.diagnosis || item.diagnosis || 'Clinical Consultation'
+    const advice = rx.advice || item.notes?.advice || item.clinicalAdvice || ''
+    const followUp = rx.followUp || item.notes?.followUp || item.followUp || 'As needed'
+    const dateStr = new Date(item.consultationDate || item.completedAt || item.createdAt || Date.now()).toLocaleDateString('en-IN', { day: 'numeric', month: 'long', year: 'numeric' })
+    const refId = item.consultationId || item.id || 'CONS-ONLINE'
 
     printWindow.document.write(`
       <!DOCTYPE html>
@@ -283,15 +292,15 @@ const PatientAccount = ({ onClose, onAuthenticated, initialMode = 'login', initi
             <p class="tagline">Arogyabodhini — AI Powered Multilingual Healthcare Platform</p>
           </div>
           <div class="meta-info">
-            <p style="margin: 0 0 4px 0;"><strong>Date:</strong> ${new Date(item.consultationDate).toLocaleDateString('en-IN')}</p>
-            <p style="margin: 0; color: #0284c7; font-weight: 600;">Ref ID: ${item.consultationId || 'CONS-ONLINE'}</p>
+            <p style="margin: 0 0 4px 0;"><strong>Date:</strong> ${dateStr}</p>
+            <p style="margin: 0; color: #0284c7; font-weight: 600;">Ref ID: ${refId}</p>
           </div>
         </div>
 
         <div class="doctor-card">
           <div>
-            <div style="font-size: 16px; font-weight: 800; color: #0f172a;">Dr. ${item.doctorName}</div>
-            <div style="font-size: 13px; color: #0284c7; font-weight: 600;">${item.doctorSpecialty || 'Consulting Specialist'}</div>
+            <div style="font-size: 16px; font-weight: 800; color: #0f172a;">Dr. ${doctorName}</div>
+            <div style="font-size: 13px; color: #0284c7; font-weight: 600;">${doctorSpecialty}</div>
           </div>
           <div style="text-align: right; font-size: 12px; color: #64748b;">
             <div>Council Reg: <strong>MCI-VERIFIED</strong></div>
@@ -302,21 +311,21 @@ const PatientAccount = ({ onClose, onAuthenticated, initialMode = 'login', initi
         <div class="patient-grid">
           <div>
             <label>Patient Name</label>
-            <strong>${patient?.name || 'Patient'}</strong>
+            <strong>${patient?.name || item.patientName || 'Patient'}</strong>
           </div>
           <div>
             <label>Age / Gender</label>
-            <strong>${patient?.age || '-'} yrs / ${patient?.gender || '-'}</strong>
+            <strong>${patient?.age || item.patientAge || '-'} yrs / ${patient?.gender || item.patientGender || '-'}</strong>
           </div>
           <div>
             <label>Patient ID</label>
-            <strong>${patient?.patientId || '-'}</strong>
+            <strong>${patient?.patientId || item.patientId || '-'}</strong>
           </div>
         </div>
 
         <div class="diagnosis-box">
           <span style="font-size: 11px; font-weight: 700; color: #0891b2; text-transform: uppercase;">Clinical Diagnosis:</span>
-          <div style="font-size: 15px; font-weight: 700; color: #0f172a; margin-top: 3px;">${item.diagnosis || 'Clinical Consultation'}</div>
+          <div style="font-size: 15px; font-weight: 700; color: #0f172a; margin-top: 3px;">${diagnosis}</div>
         </div>
 
         <h3 style="font-size: 15px; margin: 0 0 10px 0; color: #0f172a; display: flex; align-items: center; gap: 6px;">
@@ -453,7 +462,7 @@ const PatientAccount = ({ onClose, onAuthenticated, initialMode = 'login', initi
               </button>
             )}
 
-            {isCompleted && item.prescription && (
+            {(item.prescription || (item.notes?.medicines && item.notes.medicines.length > 0)) && (
               <button
                 type="button"
                 className="print-btn"

@@ -5,13 +5,41 @@
 .pvr-back-btn { padding:9px 16px; border-radius:8px; font-size:0.9rem; font-weight:700; border:2px solid #90a4ae; background:#fff; color:#37474f; cursor:pointer; font-family:inherit; transition:all .15s; }
 .pvr-back-btn:hover { background:#eceff1; }
 .pvr-title { font-size:1.1rem; font-weight:800; color:#1a2332; }
+.pvr-header-leave-btn {
+  margin-left: auto;
+  background: #dc2626;
+  color: #fff;
+  border: none;
+  padding: 8px 16px;
+  border-radius: 8px;
+  font-size: 0.85rem;
+  font-weight: 700;
+  cursor: pointer;
+  box-shadow: 0 2px 8px rgba(220, 38, 38, 0.3);
+  transition: background 0.15s ease, transform 0.1s ease;
+}
+.pvr-header-leave-btn:hover { background: #b91c1c; transform: translateY(-1px); }
 
 /* Body */
-.pvr-body { max-width:680px; width:100%; margin:0 auto; padding:24px 20px 48px; display:flex; flex-direction:column; gap:16px; }
+.pvr-body { max-width:760px; width:100%; margin:0 auto; padding:20px 16px 48px; display:flex; flex-direction:column; gap:16px; }
 
 /* Loading */
 .pvr-loading { display:flex; flex-direction:column; align-items:center; justify-content:center; gap:14px; min-height:200px; color:#78909c; font-size:0.95rem; }
 .pvr-spinner { width:36px; height:36px; border:3px solid rgba(21,101,192,.2); border-top-color:#1565c0; border-radius:50%; animation:spin .8s linear infinite; }
+
+/* In-call tip pill */
+.pvr-tip-pill {
+  background: #eff6ff;
+  border: 1px solid #bfdbfe;
+  color: #1e40af;
+  padding: 10px 16px;
+  border-radius: 10px;
+  font-size: 0.84rem;
+  line-height: 1.4;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
 
 /* Info card */
 .pvr-info-card { background:#fff; border-radius:12px; padding:18px; box-shadow:0 2px 8px rgba(0,0,0,.06); display:flex; flex-direction:column; gap:10px; }
@@ -34,7 +62,7 @@
 .pvr-waiting__hint { font-size:0.8rem; color:#90a4ae; }
 
 /* Video section */
-.pvr-video-section { border-radius:14px; overflow:hidden; min-height:420px; }
+.pvr-video-section { border-radius:14px; overflow:hidden; min-height:520px; box-shadow: 0 4px 20px rgba(0,0,0,0.12); }
 
 /* Rejected */
 .pvr-rejected { background:#fff; border-radius:14px; padding:32px; text-align:center; display:flex; flex-direction:column; align-items:center; gap:12px; box-shadow:0 2px 8px rgba(0,0,0,.06); }

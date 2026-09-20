@@ -39,6 +39,8 @@ router.get('/patient/consultations', requirePatient, async (req, res, next) => {
   try {
     const query = [{ patientId: req.patient.patientId }]
     if (req.patient.phone) query.push({ patientPhone: req.patient.phone })
+    if (req.patient.email) query.push({ patientEmail: req.patient.email })
+    if (req.patient.name) query.push({ patientName: new RegExp(`^${req.patient.name.trim()}$`, 'i') })
     const consultations = await Consultation.find({ $or: query }).sort({ createdAt: -1 }).lean()
     res.json({ success: true, consultations })
   } catch (error) { next(error) }
@@ -46,15 +48,81 @@ router.get('/patient/consultations', requirePatient, async (req, res, next) => {
 
 router.get('/patient/prescriptions', requirePatient, async (req, res, next) => {
   try {
-    const consultations = await Consultation.find({ patientId: req.patient.patientId, prescription: { $ne: null } }).sort({ createdAt: -1 }).lean()
-    res.json({ success: true, prescriptions: consultations.map((consultation) => ({
-      consultationId: consultation.id,
-      prescription: consultation.prescription,
-      doctorName: consultation.doctorName,
-      doctorSpecialty: consultation.doctorSpecialty || consultation.aiResult?.recommendedSpecialist || '',
-      consultationDate: consultation.createdAt,
-      diagnosis: consultation.notes?.diagnosis || consultation.prescription?.diagnosis || '',
-    })) })
+    const query = [{ patientId: req.patient.patientId }]
+    if (req.patient.phone) query.push({ patientPhone: req.patient.phone })
+    if (req.patient.email) query.push({ patientEmail: req.patient.email })
+    if (req.patient.name) query.push({ patientName: new RegExp(`^${req.patient.name.trim()}$`, 'i') })
+
+    // 1. Fetch consultations with prescription or medicines in notes
+    const consultations = await Consultation.find({
+      $or: query,
+      $and: [
+        {
+          $or: [
+            { prescription: { $ne: null } },
+            { 'notes.medicines': { $exists: true, $ne: [] } },
+          ]
+        }
+      ]
+    }).sort({ createdAt: -1 }).lean()
+
+    // 2. Also check standalone Prescription collection
+    const Prescription = require('../models/Prescription')
+    const standaloneRx = await Prescription.find({
+      $or: [
+        { patientId: req.patient.patientId },
+        ...(req.patient.email ? [{ patientEmail: req.patient.email }] : []),
+        ...(req.patient.name ? [{ patientName: new RegExp(`^${req.patient.name.trim()}$`, 'i') }] : [])
+      ]
+    }).sort({ prescribedAt: -1 }).lean().catch(() => [])
+
+    const prescriptionList = []
+    const seenIds = new Set()
+
+    // Add from consultations
+    for (const c of consultations) {
+      const rx = c.prescription || {}
+      const meds = rx.medicines || c.notes?.medicines || []
+      const item = {
+        consultationId: c.id,
+        prescription: {
+          medicines: meds,
+          diagnosis: rx.diagnosis || c.notes?.diagnosis || c.symptoms || 'Clinical Consultation',
+          advice: rx.advice || c.notes?.advice || '',
+          followUp: rx.followUp || c.notes?.followUp || 'As needed',
+          instructions: rx.instructions || '',
+          digitalSignatureHash: rx.digitalSignatureHash || `RX-${c.id.slice(-8).toUpperCase()}`,
+        },
+        doctorName: c.doctorName,
+        doctorSpecialty: c.doctorSpecialty || c.aiResult?.recommendedSpecialist || 'Specialist',
+        consultationDate: c.completedAt || c.createdAt,
+        diagnosis: rx.diagnosis || c.notes?.diagnosis || c.symptoms || 'Clinical Consultation',
+      }
+      prescriptionList.push(item)
+      seenIds.add(c.id)
+    }
+
+    // Add any standalone prescriptions not already in list
+    for (const s of standaloneRx) {
+      if (s.consultationId && seenIds.has(s.consultationId)) continue
+      prescriptionList.push({
+        consultationId: s.consultationId || s._id.toString(),
+        prescription: {
+          medicines: s.medicines || [],
+          diagnosis: s.diagnosis || 'Clinical Consultation',
+          advice: s.clinicalAdvice || '',
+          followUp: s.followUpDate ? new Date(s.followUpDate).toLocaleDateString('en-IN') : 'As needed',
+          instructions: '',
+          digitalSignatureHash: s.digitalSignatureHash || 'CERTIFIED-RX',
+        },
+        doctorName: s.doctorName,
+        doctorSpecialty: s.doctorSpecialty || 'Specialist',
+        consultationDate: s.prescribedAt || s.createdAt,
+        diagnosis: s.diagnosis || 'Clinical Consultation',
+      })
+    }
+
+    res.json({ success: true, prescriptions: prescriptionList })
   } catch (error) { next(error) }
 })
 

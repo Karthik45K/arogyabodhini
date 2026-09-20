@@ -120,11 +120,15 @@ const VideoCallRoom = ({ consultationId, role = 'doctor', userName = 'User', aut
         },
 
         scenario: {
-          mode: ZegoUIKitPrebuilt.GroupCall,
+          mode: ZegoUIKitPrebuilt.OneONoneCall,
         },
 
         turnOnCameraWhenJoining:     true,
         turnOnMicrophoneWhenJoining: true,
+        showMyCameraToggleButton:   true,
+        showMyMicrophoneToggleButton: true,
+        showAudioVideoSettingsButton: true,
+        showLeaveButton:             true,
 
         showScreenSharingButton:   false,
         showTurnOffRemoteCameraButton: true,
@@ -241,11 +245,32 @@ const VideoCallRoom = ({ consultationId, role = 'doctor', userName = 'User', aut
 
       {/* Status bar */}
       <div className={`vcroom-status vcroom-status--${status}`} aria-live="polite">
-        <span className={`vcroom-status__dot vcroom-status__dot--${status}`} aria-hidden="true" />
-        {STATUS_LABELS[status] || status}
-        {status === STATUS.WAITING && (
-          <span className="vcroom-room-id">Room: {roomId}</span>
-        )}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+          <span className={`vcroom-status__dot vcroom-status__dot--${status}`} aria-hidden="true" />
+          <span>{STATUS_LABELS[status] || status}</span>
+        </div>
+        <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: '10px' }}>
+          {status === STATUS.WAITING && (
+            <span className="vcroom-room-id">Room: {roomId}</span>
+          )}
+          {(status === STATUS.IN_PROGRESS || status === STATUS.WAITING || status === STATUS.SDK_ACTIVE) && (
+            <button
+              id="vcroom-leave-call-btn"
+              type="button"
+              className="vcroom-leave-btn"
+              onClick={() => {
+                if (window.confirm('Are you sure you want to end or leave this video call?')) {
+                  destroyZego()
+                  setStatus(STATUS.ENDED)
+                  onEnd?.()
+                }
+              }}
+              title="Leave / End Consultation"
+            >
+              🔴 End Call
+            </button>
+          )}
+        </div>
       </div>
 
       {/* ZEGOCLOUD renders its UI inside this div */}

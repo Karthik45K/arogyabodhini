@@ -19,6 +19,7 @@ import IncomingCallModal from './components/IncomingCallModal/IncomingCallModal'
 import MobileNav from './components/MobileNav/MobileNav'
 import ServerWarmup from './components/ServerWarmup/ServerWarmup'
 import { analyzeSymptoms as analyzeAPI } from './services/api'
+import { stopIncomingCallAlert } from './utils/callNotification'
 import './styles/App.css'
 
 const SCREENS = {
@@ -33,6 +34,7 @@ const SCREENS = {
 }
 
 const VIDEO_SESSION_KEY = 'ab_active_video_session'
+const DISMISSED_CALLS_KEY = 'ab_dismissed_calls'
 
 function loadVideoSession() {
   try {
@@ -47,6 +49,31 @@ function saveVideoSession(consultId, patientName) {
   try {
     sessionStorage.setItem(VIDEO_SESSION_KEY, JSON.stringify({ consultId, patientName }))
   } catch {}
+}
+
+function getDismissedCallIds() {
+  try {
+    const raw = sessionStorage.getItem(DISMISSED_CALLS_KEY)
+    return raw ? new Set(JSON.parse(raw)) : new Set()
+  } catch {
+    return new Set()
+  }
+}
+
+function addDismissedCallId(id) {
+  try {
+    const set = getDismissedCallIds()
+    set.add(id)
+    sessionStorage.setItem(DISMISSED_CALLS_KEY, JSON.stringify([...set]))
+  } catch {}
+}
+
+function isCallFresh(c) {
+  if (!c) return false
+  const t = new Date(c.updatedAt || c.createdAt || 0).getTime()
+  if (!t || isNaN(t)) return true
+  // Within last 45 minutes
+  return (Date.now() - t) < 45 * 60 * 1000
 }
 
 function clearVideoSession() {
@@ -79,6 +106,7 @@ function AppInner() {
   const [accountInitialView, setAccountInitialView] = useState('profile')
   const [currentTab, setCurrentTab] = useState('home')
   const transcriptRef = useRef('')
+  const lastAlertedCallIdRef = useRef(null)
 
   // Keep patient on video screen across remounts / refresh during active consultation
   useEffect(() => {
@@ -87,19 +115,38 @@ function AppInner() {
     }
   }, [screen, videoConsultId, videoPatientName])
 
+  // Silence any ringing immediately whenever user enters video room
+  useEffect(() => {
+    if (screen === SCREENS.PATIENT_VIDEO) {
+      setShowIncomingModal(false)
+      stopIncomingCallAlert()
+    }
+  }, [screen])
+
+  const handleDismissCall = useCallback((callId) => {
+    if (callId) {
+      addDismissedCallId(callId)
+    }
+    stopIncomingCallAlert()
+    setShowIncomingModal(false)
+    setActiveIncomingCall(null)
+  }, [])
+
   // Background poller to detect if a doctor has accepted or initiated a consultation
   useEffect(() => {
     let cancelled = false
     const checkActiveCalls = async () => {
       try {
+        const dismissed = getDismissedCallIds()
         if (patient) {
           const res = await patientService.consultations()
           const consults = res.consultations || []
-          const readyCall = consults.find(c => c.status === 'accepted')
+          const readyCall = consults.find(c => c.status === 'accepted' && isCallFresh(c))
           const upcoming = consults.find(c => c.status === 'waiting' && c.slot)
           if (!cancelled) {
-            if (readyCall) {
-              if (!activeIncomingCall || activeIncomingCall.id !== readyCall.id) {
+            if (readyCall && !dismissed.has(readyCall.id)) {
+              if (lastAlertedCallIdRef.current !== readyCall.id && screen !== SCREENS.PATIENT_VIDEO) {
+                lastAlertedCallIdRef.current = readyCall.id
                 setShowIncomingModal(true)
               }
               setActiveIncomingCall(readyCall)
@@ -111,8 +158,9 @@ function AppInner() {
           }
         } else if (videoConsultId) {
           const consult = await consultationService.getById(videoConsultId, 'patient').catch(() => null)
-          if (!cancelled && consult?.status === 'accepted') {
-            if (!activeIncomingCall || activeIncomingCall.id !== consult.id) {
+          if (!cancelled && consult?.status === 'accepted' && isCallFresh(consult) && !dismissed.has(consult.id)) {
+            if (lastAlertedCallIdRef.current !== consult.id && screen !== SCREENS.PATIENT_VIDEO) {
+              lastAlertedCallIdRef.current = consult.id
               setShowIncomingModal(true)
             }
             setActiveIncomingCall(consult)
@@ -124,13 +172,13 @@ function AppInner() {
       } catch {}
     }
 
-    const intervalId = setInterval(checkActiveCalls, 3500)
+    const intervalId = setInterval(checkActiveCalls, 4000)
     checkActiveCalls()
     return () => {
       cancelled = true
       clearInterval(intervalId)
     }
-  }, [patient, videoConsultId, activeIncomingCall])
+  }, [patient, videoConsultId, screen])
 
   const handleMobileNavChange = useCallback((tab) => {
     setCurrentTab(tab)
@@ -259,6 +307,8 @@ function AppInner() {
   const currentLang = activeLang || lang
 
   const handleJoinActiveCall = useCallback((call) => {
+    stopIncomingCallAlert()
+    setShowIncomingModal(false)
     const pName = patient?.name || call?.patientName || 'Patient'
     setVideoConsultId(call.id)
     setVideoPatientName(pName)
@@ -309,32 +359,52 @@ function AppInner() {
               </span>
             </div>
           </div>
-          <button
-            id="join-active-call-banner-btn"
-            onClick={() => handleJoinActiveCall(activeIncomingCall)}
-            style={{
-              background: '#ffffff',
-              color: '#15803d',
-              border: 'none',
-              padding: '10px 20px',
-              borderRadius: '8px',
-              fontWeight: 800,
-              fontSize: '0.95rem',
-              cursor: 'pointer',
-              boxShadow: '0 2px 10px rgba(0,0,0,0.15)'
-            }}
-          >
-            🎥 Join Video Call Now
-          </button>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+            <button
+              id="join-active-call-banner-btn"
+              onClick={() => handleJoinActiveCall(activeIncomingCall)}
+              style={{
+                background: '#ffffff',
+                color: '#15803d',
+                border: 'none',
+                padding: '10px 20px',
+                borderRadius: '8px',
+                fontWeight: 800,
+                fontSize: '0.95rem',
+                cursor: 'pointer',
+                boxShadow: '0 2px 10px rgba(0,0,0,0.15)'
+              }}
+            >
+              🎥 Join Video Call Now
+            </button>
+            <button
+              id="dismiss-active-call-banner-btn"
+              type="button"
+              onClick={() => handleDismissCall(activeIncomingCall.id)}
+              style={{
+                background: 'rgba(255,255,255,0.2)',
+                color: '#ffffff',
+                border: '1px solid rgba(255,255,255,0.4)',
+                padding: '9px 14px',
+                borderRadius: '8px',
+                fontWeight: 700,
+                fontSize: '0.85rem',
+                cursor: 'pointer'
+              }}
+              title="Dismiss notification"
+            >
+              ✕ Dismiss
+            </button>
+          </div>
         </div>
       )}
 
       {/* Ringing Incoming Video Call Modal */}
-      {showIncomingModal && activeIncomingCall && (
+      {showIncomingModal && activeIncomingCall && screen !== SCREENS.PATIENT_VIDEO && (
         <IncomingCallModal
           call={activeIncomingCall}
           onAccept={handleJoinActiveCall}
-          onDismiss={() => setShowIncomingModal(false)}
+          onDismiss={() => handleDismissCall(activeIncomingCall.id)}
         />
       )}
 

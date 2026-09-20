@@ -128,6 +128,20 @@ const PatientVideoRoom = ({ consultationId, patientName, onBack, onHome }) => {
       <div className="pvr-header">
         <button id="pvr-back-btn" className="pvr-back-btn" onClick={onBack}>← Back</button>
         <span className="pvr-title">Video Consultation</span>
+        {!callEnded && !fetchError && (
+          <button
+            id="pvr-end-consultation-btn"
+            type="button"
+            className="pvr-header-leave-btn"
+            onClick={() => {
+              if (window.confirm('Are you sure you want to end this consultation?')) {
+                handleCallEnd()
+              }
+            }}
+          >
+            🔴 End Call
+          </button>
+        )}
       </div>
 
       <div className="pvr-body">
@@ -157,6 +171,13 @@ const PatientVideoRoom = ({ consultationId, patientName, onBack, onHome }) => {
             </span>
           </div>
         </div>
+
+        {/* Controls guidance pill */}
+        {!fetchError && !callEnded && (
+          <div className="pvr-tip-pill">
+            <span>💡 <strong>In-Call Controls:</strong> Use the bottom toolbar inside the video frame to toggle Microphone 🎙️, Camera 📷, or Audio settings.</span>
+          </div>
+        )}
 
         {/* Server / fetch error — stay on this screen with retry */}
         {fetchError && !checking && (
