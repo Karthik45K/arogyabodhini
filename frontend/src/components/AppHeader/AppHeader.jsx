@@ -6,16 +6,24 @@ import PatientAccount from '../PatientAccount/PatientAccount';
 import { usePatientAuth } from '../../patient/context/PatientContext';
 import './AppHeader.css';
 
-const AppHeader = ({ onChangeLang, onJoinVideoRoom, activeIncomingCall }) => {
+const AppHeader = ({ onChangeLang, onJoinVideoRoom, activeIncomingCall, onOpenAccount }) => {
   const { t, en, lang } = useLanguage();
   const { patient } = usePatientAuth();
   const [showAccount, setShowAccount] = useState(false);
   const navigate = useNavigate();
 
+  const handleAccountClick = () => {
+    if (onOpenAccount) {
+      onOpenAccount();
+    } else {
+      setShowAccount(true);
+    }
+  };
+
   return (
     <header className="ab-header" role="banner">
       <div className="ab-header__inner">
-        <button className="ab-header__brand-btn" onClick={() => navigate('/')}>
+        <button className="ab-header__brand-btn" onClick={() => navigate('/')} aria-label="Arogyabodhini Home">
           <div className="ab-header__logo" aria-hidden="true">
             <svg width="28" height="28" viewBox="0 0 32 32" fill="none">
               <rect width="32" height="32" rx="6" fill="#1565c0"/>
@@ -39,8 +47,9 @@ const AppHeader = ({ onChangeLang, onJoinVideoRoom, activeIncomingCall }) => {
               id="active-call-header-btn"
               className="ab-header__active-call-btn"
               onClick={() => onJoinVideoRoom(activeIncomingCall.id, activeIncomingCall.patientName || patient?.name)}
+              title={`Join active call with Dr. ${activeIncomingCall.doctorName}`}
             >
-              🎥 Call Active: Dr. {activeIncomingCall.doctorName}
+              🎥 <span className="ab-header__call-text">Call Active</span>
             </button>
           )}
 
@@ -56,11 +65,19 @@ const AppHeader = ({ onChangeLang, onJoinVideoRoom, activeIncomingCall }) => {
               stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" aria-hidden="true">
               <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
             </svg>
-            {en('freeSecure')}
+            <span>{en('freeSecure')}</span>
           </div>
 
-          <button id="patient-login-btn" className="ab-header__patient-btn" onClick={() => setShowAccount(true)}>
-            {patient ? `👤 Hi, ${patient.name.split(/\s+/)[0]}` : 'Patient Login'}
+          <button
+            id="patient-login-btn"
+            className="ab-header__patient-btn"
+            onClick={handleAccountClick}
+            aria-label={patient ? `Profile of ${patient.name}` : 'Patient Login'}
+          >
+            <span className="ab-header__patient-icon">👤</span>
+            <span className="ab-header__patient-name">
+              {patient ? `Hi, ${patient.name.split(/\s+/)[0]}` : 'Login'}
+            </span>
           </button>
 
           <button
@@ -70,14 +87,16 @@ const AppHeader = ({ onChangeLang, onJoinVideoRoom, activeIncomingCall }) => {
             aria-label={en('changeLanguage')}
             title={en('changeLanguage')}
           >
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none"
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none"
               stroke="currentColor" strokeWidth="2" strokeLinecap="round"
               strokeLinejoin="round" aria-hidden="true">
               <circle cx="12" cy="12" r="10"/>
               <line x1="2" y1="12" x2="22" y2="12"/>
               <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/>
             </svg>
-            <span className="ab-header__lang-code">{lang?.nativeLabel || '🌐'}</span>
+            <span className="ab-header__lang-code">
+              {lang?.code ? lang.code.toUpperCase() : (lang?.nativeLabel || '🌐')}
+            </span>
           </button>
         </div>
       </div>

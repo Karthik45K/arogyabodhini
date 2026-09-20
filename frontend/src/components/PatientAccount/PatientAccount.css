@@ -448,16 +448,30 @@
 }
 
 /* ── Responsive Mobile ── */
-@media (max-width: 600px) {
+@media (max-width: 640px) {
   .patient-modal-backdrop {
-    padding: 8px;
-    align-items: flex-end;
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-end;
+    align-items: stretch;
+    padding: 0;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
   }
   .patient-modal {
     width: 100%;
+    max-height: 90vh;
+    max-height: 90dvh;
+    padding: 24px 18px calc(24px + env(safe-area-inset-bottom, 16px));
+    border-radius: 20px 20px 0 0;
+    margin: auto 0 0 0;
+    box-shadow: 0 -8px 32px rgba(15, 23, 42, 0.28);
+    overscroll-behavior: contain;
+    animation: slideUpModal 0.28s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+  .patient-modal--account {
     max-height: 92vh;
-    padding: 20px 16px;
-    border-radius: 16px 16px 0 0;
+    max-height: 92dvh;
   }
   .patient-form__row {
     grid-template-columns: 1fr;
@@ -468,5 +482,28 @@
   }
   .patient-account__id {
     display: none;
+  }
+  .patient-account__tabs {
+    gap: 4px;
+    overflow-x: auto;
+    padding-bottom: 4px;
+    -webkit-overflow-scrolling: touch;
+  }
+  .patient-account__tabs button {
+    padding: 8px 12px;
+    font-size: 0.8rem;
+    white-space: nowrap;
+    flex-shrink: 0;
+  }
+}
+
+@keyframes slideUpModal {
+  from {
+    transform: translateY(100%);
+    opacity: 0.8;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
   }
 }

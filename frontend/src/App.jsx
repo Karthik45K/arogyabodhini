@@ -242,8 +242,10 @@ function AppInner() {
 
   const handlePatientAuthenticated = useCallback(() => {
     setShowPatientAuth(false)
-    setScreen(SCREENS.APPOINTMENT)
-  }, [])
+    if (selectedDoctor) {
+      setScreen(SCREENS.APPOINTMENT)
+    }
+  }, [selectedDoctor])
 
   // ── No language saved yet → show picker ──
   if (!lang) {
@@ -273,6 +275,7 @@ function AppInner() {
         onChangeLang={() => setShowLangPicker(true)}
         onJoinVideoRoom={handleJoinActiveCall}
         activeIncomingCall={activeIncomingCall}
+        onOpenAccount={() => { setAccountInitialView('profile'); setShowPatientAuth(true); }}
       />
 
       <ServerWarmup />
