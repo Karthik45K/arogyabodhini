@@ -1,0 +1,71 @@
+.analyzing-screen {
+  min-height: calc(100vh - 68px);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  background: #ffffff;
+  padding: 40px 24px;
+  gap: 16px;
+  text-align: center;
+}
+
+.analyzing-icon {
+  width: 100px;
+  height: 100px;
+  background: #e8f0fe;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 3px solid #c5cae9;
+  margin-bottom: 8px;
+}
+
+.analyzing-spinner {
+  position: relative;
+  width: 60px;
+  height: 60px;
+}
+
+.analyzing-spinner__ring {
+  width: 60px;
+  height: 60px;
+  border: 5px solid #e8eaf6;
+  border-top-color: #1565c0;
+  border-radius: 50%;
+  animation: spin 0.9s linear infinite;
+}
+
+.analyzing-title {
+  font-size: 1.75rem;
+  font-weight: 800;
+  color: #1a2332;
+}
+
+.analyzing-subtitle {
+  font-size: 1.1rem;
+  color: #546e7a;
+}
+
+.analyzing-wait {
+  font-size: 1rem;
+  color: #90a4ae;
+}
+
+.analyzing-dots {
+  display: flex;
+  gap: 10px;
+  margin-top: 8px;
+}
+
+.analyzing-dots span {
+  width: 12px;
+  height: 12px;
+  background: #1565c0;
+  border-radius: 50%;
+  animation: blink 1.2s ease infinite;
+}
+
+.analyzing-dots span:nth-child(2) { animation-delay: 0.2s; }
+.analyzing-dots span:nth-child(3) { animation-delay: 0.4s; }

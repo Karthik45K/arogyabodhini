@@ -1,0 +1,510 @@
+.rx-root {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  max-width: 860px;
+  margin: 0 auto;
+  width: 100%;
+}
+
+.rx-root--empty {
+  background: #fff;
+  border-radius: 12px;
+  padding: 50px 30px;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 14px;
+  color: #64748b;
+  box-shadow: 0 4px 14px rgba(0,0,0,0.04);
+  border: 1px solid #e2e8f0;
+}
+
+.rx-empty-icon {
+  font-size: 3rem;
+}
+
+/* ── Digital Prescription Paper ────────────────────────────────────────────── */
+.rx-paper {
+  background: #ffffff;
+  border: 1.5px solid #cbd5e1;
+  border-radius: 12px;
+  padding: 32px 36px;
+  box-shadow: 0 8px 30px rgba(0,0,0,0.06);
+  color: #1e293b;
+  font-size: 0.9rem;
+  position: relative;
+  overflow: hidden;
+}
+
+.rx-letterhead {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 14px;
+}
+
+.rx-letterhead__brand {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.rx-brand-logo svg {
+  display: block;
+}
+
+.rx-clinic-name {
+  font-size: 1.25rem;
+  font-weight: 800;
+  color: #0f172a;
+  margin: 0 0 2px 0;
+  letter-spacing: -0.01em;
+}
+
+.rx-clinic-tagline {
+  font-size: 0.78rem;
+  color: #64748b;
+  font-weight: 500;
+}
+
+.rx-letterhead__meta {
+  text-align: right;
+  font-size: 0.82rem;
+  color: #475569;
+}
+
+.rx-letterhead__meta p {
+  margin: 0 0 3px 0;
+}
+
+.rx-ref-badge {
+  display: inline-block;
+  background: #e0f2fe;
+  color: #0369a1;
+  font-size: 0.72rem;
+  font-weight: 700;
+  padding: 3px 8px;
+  border-radius: 4px;
+  margin-top: 4px;
+  font-family: monospace;
+}
+
+.rx-accent-line {
+  height: 3px;
+  background: linear-gradient(90deg, #0284c7 0%, #38bdf8 50%, #e2e8f0 100%);
+  margin-bottom: 20px;
+  border-radius: 2px;
+}
+
+/* ── Parties Grid ─────────────────────────────────────────────────────────── */
+.rx-parties-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+  margin-bottom: 20px;
+}
+
+.rx-party-card {
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  padding: 14px 18px;
+}
+
+.rx-party-card--doctor {
+  border-left: 4px solid #0284c7;
+}
+
+.rx-party-card--patient {
+  border-left: 4px solid #10b981;
+}
+
+.rx-section-kicker {
+  font-size: 0.68rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  font-weight: 800;
+  color: #64748b;
+  display: block;
+  margin-bottom: 4px;
+}
+
+.rx-doc-name, .rx-patient-name {
+  font-size: 1.05rem;
+  font-weight: 800;
+  color: #0f172a;
+  margin: 0 0 3px 0;
+}
+
+.rx-doc-spec, .rx-patient-details {
+  font-size: 0.85rem;
+  color: #334155;
+  font-weight: 600;
+  margin: 0 0 3px 0;
+}
+
+.rx-doc-reg, .rx-patient-contact {
+  font-size: 0.78rem;
+  color: #64748b;
+  margin: 0;
+}
+
+/* ── Diagnosis Bar ────────────────────────────────────────────────────────── */
+.rx-diagnosis-bar {
+  background: #f0fdf4;
+  border: 1px solid #bbf7d0;
+  border-left: 4px solid #22c55e;
+  border-radius: 6px;
+  padding: 10px 16px;
+  margin-bottom: 22px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.rx-diagnosis-label {
+  font-size: 0.8rem;
+  font-weight: 800;
+  color: #166534;
+  text-transform: uppercase;
+}
+
+.rx-diagnosis-value {
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: #0f172a;
+}
+
+/* ── Meds Section ─────────────────────────────────────────────────────────── */
+.rx-meds-section {
+  margin-bottom: 22px;
+}
+
+.rx-meds-heading {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+
+.rx-rx-glyph {
+  font-size: 1.8rem;
+  font-family: serif;
+  font-weight: 900;
+  color: #0284c7;
+  line-height: 1;
+}
+
+.rx-meds-heading h4 {
+  font-size: 0.95rem;
+  font-weight: 800;
+  color: #0f172a;
+  margin: 0;
+}
+
+.rx-table-wrap {
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+.rx-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.86rem;
+}
+
+.rx-table th {
+  background: #0f172a;
+  color: #ffffff;
+  padding: 10px 14px;
+  text-align: left;
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.rx-table td {
+  padding: 11px 14px;
+  color: #1e293b;
+  border-bottom: 1px solid #f1f5f9;
+}
+
+.rx-table tr:last-child td {
+  border-bottom: none;
+}
+
+.rx-cell-idx {
+  font-weight: 700;
+  color: #64748b;
+}
+
+.rx-cell-med strong {
+  color: #0f172a;
+}
+
+.rx-freq-pill {
+  display: inline-block;
+  background: #f1f5f9;
+  border: 1px solid #cbd5e1;
+  padding: 2px 8px;
+  border-radius: 4px;
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: #334155;
+}
+
+/* ── Instructions & Advice ────────────────────────────────────────────────── */
+.rx-instructions-box {
+  margin-bottom: 14px;
+}
+
+.rx-instructions-box label {
+  font-size: 0.74rem;
+  font-weight: 800;
+  color: #64748b;
+  text-transform: uppercase;
+  display: block;
+  margin-bottom: 6px;
+}
+
+.rx-input-textarea {
+  width: 100%;
+  padding: 10px 14px;
+  border: 1.5px solid #cbd5e1;
+  border-radius: 8px;
+  font-size: 0.88rem;
+  font-family: inherit;
+  color: #0f172a;
+  outline: none;
+  box-sizing: border-box;
+  transition: border-color .15s;
+}
+
+.rx-input-textarea:focus {
+  border-color: #0284c7;
+}
+
+.rx-static-text {
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 6px;
+  padding: 10px 14px;
+  margin: 0;
+  color: #334155;
+}
+
+.rx-advice-callout {
+  background: #fefce8;
+  border: 1px solid #fef08a;
+  border-radius: 8px;
+  padding: 12px 16px;
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  margin-bottom: 14px;
+}
+
+.rx-advice-icon {
+  font-size: 1.2rem;
+  line-height: 1.2;
+}
+
+.rx-advice-callout strong {
+  color: #854d0e;
+  font-size: 0.82rem;
+  display: block;
+  margin-bottom: 4px;
+}
+
+.rx-advice-callout p {
+  margin: 0;
+  color: #713f12;
+  font-size: 0.86rem;
+}
+
+.rx-followup-line {
+  font-size: 0.84rem;
+  color: #475569;
+  margin-bottom: 24px;
+}
+
+/* ── Digital Signature Seal ───────────────────────────────────────────────── */
+.rx-digital-signature {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  border-top: 2px dashed #cbd5e1;
+  padding-top: 20px;
+  margin-top: 20px;
+}
+
+.rx-certified-seal {
+  background: #f0f9ff;
+  border: 1.5px solid #0284c7;
+  border-radius: 8px;
+  padding: 12px 18px;
+  max-width: 320px;
+}
+
+.rx-seal-badge {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: #0284c7;
+  font-weight: 800;
+  font-size: 0.8rem;
+  letter-spacing: 0.05em;
+  margin-bottom: 4px;
+}
+
+.rx-seal-desc {
+  font-size: 0.72rem;
+  color: #475569;
+  margin: 0 0 6px 0;
+}
+
+.rx-sig-hash {
+  font-family: monospace;
+  font-size: 0.75rem;
+  background: #ffffff;
+  padding: 2px 6px;
+  border: 1px solid #bae6fd;
+  border-radius: 4px;
+  color: #0369a1;
+  font-weight: 700;
+}
+
+.rx-doctor-signoff {
+  text-align: right;
+}
+
+.rx-script-sign {
+  font-family: 'Brush Script MT', cursive, sans-serif;
+  font-size: 1.8rem;
+  color: #1e3a8a;
+  margin-bottom: 4px;
+  transform: rotate(-3deg);
+  display: inline-block;
+}
+
+.rx-sign-line {
+  width: 180px;
+  border-bottom: 2px solid #0f172a;
+  margin-left: auto;
+  margin-bottom: 6px;
+}
+
+.rx-sign-details strong {
+  display: block;
+  font-size: 0.9rem;
+  color: #0f172a;
+}
+
+.rx-sign-details span {
+  display: block;
+  font-size: 0.75rem;
+  color: #64748b;
+}
+
+.rx-compliance-footer {
+  margin-top: 24px;
+  padding-top: 14px;
+  border-top: 1px solid #f1f5f9;
+  font-size: 0.7rem;
+  color: #94a3b8;
+  text-align: center;
+  line-height: 1.4;
+}
+
+/* ── Action Buttons ───────────────────────────────────────────────────────── */
+.rx-action-bar {
+  display: flex;
+  gap: 12px;
+}
+
+.rx-btn {
+  flex: 1;
+  padding: 13px 20px;
+  border-radius: 10px;
+  font-size: 0.95rem;
+  font-weight: 700;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  transition: all 0.15s ease;
+  font-family: inherit;
+}
+
+.rx-btn--save {
+  background: #0284c7;
+  color: #ffffff;
+  border: none;
+  box-shadow: 0 4px 12px rgba(2, 132, 199, 0.25);
+}
+
+.rx-btn--save:hover {
+  background: #0369a1;
+  transform: translateY(-1px);
+}
+
+.rx-btn--print {
+  background: #ffffff;
+  color: #0f172a;
+  border: 1.5px solid #cbd5e1;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.03);
+}
+
+.rx-btn--print:hover {
+  background: #f8fafc;
+  border-color: #94a3b8;
+}
+
+.rx-toast-msg {
+  background: #f0fdf4;
+  border: 1.5px solid #86efac;
+  color: #166534;
+  padding: 12px 18px;
+  border-radius: 8px;
+  font-weight: 600;
+  font-size: 0.9rem;
+  text-align: center;
+}
+
+/* ── Responsive Adaptations ── */
+@media (max-width: 640px) {
+  .rx-paper {
+    padding: 20px 16px;
+    border-radius: 8px;
+  }
+  .rx-letterhead {
+    flex-direction: column;
+    gap: 12px;
+  }
+  .rx-letterhead__meta {
+    text-align: left;
+  }
+  .rx-parties-grid {
+    grid-template-columns: 1fr;
+    gap: 12px;
+  }
+  .rx-action-bar {
+    flex-direction: column;
+  }
+  .rx-btn {
+    width: 100%;
+    min-height: 48px;
+  }
+  .rx-sign-block {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 16px;
+  }
+}
+

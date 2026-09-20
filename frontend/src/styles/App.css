@@ -1,0 +1,190 @@
+/* App layout wrapper */
+.ab-app {
+  min-height: 100vh;
+  min-height: 100dvh;
+  display: flex;
+  flex-direction: column;
+  background: var(--surface-0);
+  color: var(--text-primary);
+}
+
+.ab-main {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+}
+
+/* ── Unified Page Container ── */
+.ab-container {
+  width: 100%;
+  max-width: var(--max-w-page);
+  margin-left: auto;
+  margin-right: auto;
+  padding-left: clamp(14px, 3.5vw, 28px);
+  padding-right: clamp(14px, 3.5vw, 28px);
+}
+
+.ab-container--readable {
+  max-width: var(--max-w-readable);
+}
+
+.ab-container--form {
+  max-width: var(--max-w-form);
+}
+
+/* ── Universal Modern Cards ── */
+.ab-card {
+  background: var(--surface-1);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-xs);
+  transition: box-shadow 0.2s ease, border-color 0.2s ease, transform 0.2s ease;
+}
+
+.ab-card--interactive:hover {
+  box-shadow: var(--shadow-md);
+  border-color: #cbd5e1;
+}
+
+/* ── Universal Badges ── */
+.ab-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 3px 10px;
+  border-radius: var(--radius-full);
+  font-size: 0.76rem;
+  font-weight: 700;
+  line-height: 1.3;
+  letter-spacing: 0.02em;
+}
+
+.ab-badge--success {
+  background: var(--accent-light);
+  color: var(--accent);
+  border: 1px solid #a5d6a7;
+}
+
+.ab-badge--info {
+  background: var(--primary-light);
+  color: var(--primary);
+  border: 1px solid #90caf9;
+}
+
+.ab-badge--warning {
+  background: var(--warning-light);
+  color: var(--warning);
+  border: 1px solid #ffcc80;
+}
+
+.ab-badge--danger {
+  background: var(--danger-light);
+  color: var(--danger);
+  border: 1px solid #ef9a9a;
+}
+
+/* ── Universal Button System ── */
+.ab-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: var(--touch-min);
+  padding: 10px 18px;
+  border-radius: var(--radius-sm);
+  font-size: 0.92rem;
+  font-weight: 700;
+  text-align: center;
+  white-space: nowrap;
+  user-select: none;
+  border: 1px solid transparent;
+  transition: all 0.16s ease;
+}
+
+.ab-btn--primary {
+  background: var(--primary);
+  color: var(--text-inverse);
+  box-shadow: 0 2px 6px rgba(21, 101, 192, 0.25);
+}
+
+.ab-btn--primary:hover:not(:disabled) {
+  background: var(--primary-hover);
+  box-shadow: 0 4px 12px rgba(21, 101, 192, 0.35);
+  transform: translateY(-1px);
+}
+
+.ab-btn--secondary {
+  background: var(--surface-1);
+  color: var(--primary);
+  border-color: var(--border-color);
+  box-shadow: var(--shadow-xs);
+}
+
+.ab-btn--secondary:hover:not(:disabled) {
+  background: var(--primary-subtle);
+  border-color: var(--primary-light);
+  color: var(--primary-hover);
+}
+
+.ab-btn:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+  box-shadow: none !important;
+  transform: none !important;
+}
+
+/* ── Responsive Table Wrapper ── */
+.ab-table-responsive {
+  width: 100%;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  border-radius: var(--radius-sm);
+}
+
+/* ── Global Animations ── */
+@keyframes anim-in {
+  from { opacity: 0; transform: translateY(8px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: scale(0.98); }
+  to   { opacity: 1; transform: scale(1); }
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+@keyframes blink {
+  0%, 100% { opacity: 1; }
+  50%       { opacity: 0.35; }
+}
+
+.anim-in {
+  animation: anim-in 0.25s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+@keyframes pulse {
+  0%   { transform: scale(1); opacity: 1; }
+  50%  { transform: scale(1.05); opacity: 0.85; }
+  100% { transform: scale(1); opacity: 1; }
+}
+
+@keyframes anim-up {
+  from { opacity: 0; transform: translateY(16px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.anim-up {
+  animation: anim-up 0.22s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+/* Mobile viewport adjustments */
+@media (max-width: 768px) {
+  .ab-main {
+    padding-bottom: calc(72px + env(safe-area-inset-bottom));
+  }
+}
+

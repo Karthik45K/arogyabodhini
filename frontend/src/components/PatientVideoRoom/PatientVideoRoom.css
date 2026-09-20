@@ -1,0 +1,51 @@
+.pvr-root { display:flex; flex-direction:column; min-height:100vh; background:#f5f7fa; font-family:'Noto Sans',Arial,sans-serif; }
+
+/* Header */
+.pvr-header { background:#fff; border-bottom:2px solid #e0e0e0; padding:12px 20px; display:flex; align-items:center; gap:16px; position:sticky; top:0; z-index:10; }
+.pvr-back-btn { padding:9px 16px; border-radius:8px; font-size:0.9rem; font-weight:700; border:2px solid #90a4ae; background:#fff; color:#37474f; cursor:pointer; font-family:inherit; transition:all .15s; }
+.pvr-back-btn:hover { background:#eceff1; }
+.pvr-title { font-size:1.1rem; font-weight:800; color:#1a2332; }
+
+/* Body */
+.pvr-body { max-width:680px; width:100%; margin:0 auto; padding:24px 20px 48px; display:flex; flex-direction:column; gap:16px; }
+
+/* Loading */
+.pvr-loading { display:flex; flex-direction:column; align-items:center; justify-content:center; gap:14px; min-height:200px; color:#78909c; font-size:0.95rem; }
+.pvr-spinner { width:36px; height:36px; border:3px solid rgba(21,101,192,.2); border-top-color:#1565c0; border-radius:50%; animation:spin .8s linear infinite; }
+
+/* Info card */
+.pvr-info-card { background:#fff; border-radius:12px; padding:18px; box-shadow:0 2px 8px rgba(0,0,0,.06); display:flex; flex-direction:column; gap:10px; }
+.pvr-info-row { display:flex; align-items:center; gap:10px; }
+.pvr-info-label { font-size:0.78rem; font-weight:700; color:#90a4ae; text-transform:uppercase; min-width:70px; }
+.pvr-info-val { font-size:0.92rem; font-weight:600; color:#1a2332; }
+
+/* Status chip */
+.pvr-status-chip { display:inline-block; padding:4px 12px; border-radius:99px; font-size:0.82rem; font-weight:700; }
+.pvr-status-chip--waiting  { background:#fff3e0; color:#e65100; border:1px solid #ffcc80; }
+.pvr-status-chip--accepted { background:#e8f5e9; color:#2e7d32; border:1px solid #a5d6a7; }
+.pvr-status-chip--completed{ background:#e8f5e9; color:#2e7d32; border:1px solid #a5d6a7; }
+.pvr-status-chip--rejected { background:#ffebee; color:#c62828; border:1px solid #ef9a9a; }
+
+/* Waiting */
+.pvr-waiting { background:#fff; border-radius:14px; padding:32px; text-align:center; display:flex; flex-direction:column; align-items:center; gap:12px; box-shadow:0 2px 8px rgba(0,0,0,.06); }
+.pvr-waiting__spinner { width:44px; height:44px; border:3.5px solid rgba(21,101,192,.2); border-top-color:#1565c0; border-radius:50%; animation:spin 1s linear infinite; }
+.pvr-waiting h3 { font-size:1.1rem; font-weight:800; color:#1a2332; }
+.pvr-waiting p  { font-size:0.9rem; color:#546e7a; }
+.pvr-waiting__hint { font-size:0.8rem; color:#90a4ae; }
+
+/* Video section */
+.pvr-video-section { border-radius:14px; overflow:hidden; min-height:420px; }
+
+/* Rejected */
+.pvr-rejected { background:#fff; border-radius:14px; padding:32px; text-align:center; display:flex; flex-direction:column; align-items:center; gap:12px; box-shadow:0 2px 8px rgba(0,0,0,.06); }
+.pvr-rejected__icon { font-size:2.5rem; color:#c62828; }
+.pvr-rejected h3 { font-size:1.1rem; font-weight:800; color:#c62828; }
+.pvr-rejected p  { font-size:0.9rem; color:#546e7a; }
+.pvr-home-btn { padding:12px 28px; border-radius:10px; background:#1565c0; color:#fff; font-size:0.95rem; font-weight:700; border:none; cursor:pointer; font-family:inherit; transition:all .15s; }
+.pvr-home-btn:hover { background:#0d47a1; }
+
+/* Ended (Issue 3 fix — patient stays on this screen) */
+.pvr-ended { background:#fff; border-radius:14px; padding:32px; text-align:center; display:flex; flex-direction:column; align-items:center; gap:14px; box-shadow:0 2px 8px rgba(0,0,0,.06); }
+.pvr-ended__icon { font-size:2.5rem; }
+.pvr-ended h3 { font-size:1.1rem; font-weight:800; color:#2e7d32; }
+.pvr-ended p  { font-size:0.9rem; color:#546e7a; }

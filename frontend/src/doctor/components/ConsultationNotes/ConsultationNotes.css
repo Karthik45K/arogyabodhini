@@ -1,0 +1,23 @@
+.cnotes-root { background:#fff; border-radius:12px; padding:20px; box-shadow:0 2px 8px rgba(0,0,0,.06); }
+.cnotes-title { font-size:1rem; font-weight:800; color:#1a2332; margin-bottom:16px; padding-bottom:8px; border-bottom:1.5px solid #f0f0f0; }
+.cnotes-saved-banner { background:#e8f5e9; border:1.5px solid #a5d6a7; color:#2e7d32; border-radius:8px; padding:10px 14px; font-size:0.88rem; font-weight:700; margin-bottom:14px; }
+.cnotes-form { display:flex; flex-direction:column; gap:14px; }
+.cnotes-field { display:flex; flex-direction:column; gap:6px; }
+.cnotes-field > label { font-size:0.82rem; font-weight:700; color:#37474f; }
+.cnotes-req { color:#c62828; }
+.cnotes-input { padding:9px 12px; border:1.5px solid #e0e0e0; border-radius:8px; font-size:0.9rem; font-family:inherit; color:#1a2332; transition:border-color .15s; }
+.cnotes-input:focus { border-color:#1565c0; outline:none; }
+.cnotes-input:disabled { background:#f5f7fa; color:#90a4ae; }
+.cnotes-textarea { padding:10px 12px; border:1.5px solid #e0e0e0; border-radius:8px; font-size:0.9rem; font-family:inherit; color:#1a2332; resize:vertical; transition:border-color .15s; }
+.cnotes-textarea:focus { border-color:#1565c0; outline:none; }
+.cnotes-textarea:disabled { background:#f5f7fa; color:#90a4ae; }
+.cnotes-select { padding:9px 10px; border:1.5px solid #e0e0e0; border-radius:8px; font-size:0.85rem; font-family:inherit; color:#1a2332; background:#fff; cursor:pointer; }
+.cnotes-select:disabled { background:#f5f7fa; color:#90a4ae; }
+.cnotes-med-row { display:flex; gap:6px; align-items:center; margin-bottom:6px; flex-wrap:wrap; }
+.cnotes-med-name { flex:1; min-width:120px; }
+.cnotes-remove-btn { padding:6px 10px; border-radius:6px; background:#ffebee; color:#c62828; border:1px solid #ef9a9a; cursor:pointer; font-size:0.8rem; }
+.cnotes-add-med-btn { padding:8px 16px; border-radius:8px; background:#e8f0fe; color:#1565c0; border:1.5px solid #9fa8da; font-size:0.85rem; font-weight:700; cursor:pointer; font-family:inherit; align-self:flex-start; transition:all .15s; }
+.cnotes-add-med-btn:hover { background:#d0e4fd; }
+.cnotes-save-btn { padding:13px; border-radius:10px; background:#1565c0; color:#fff; font-size:0.95rem; font-weight:800; border:none; cursor:pointer; font-family:inherit; box-shadow:0 3px 10px rgba(21,101,192,.3); transition:all .15s; }
+.cnotes-save-btn:hover:not(:disabled) { background:#0d47a1; transform:translateY(-1px); }
+.cnotes-save-btn:disabled { background:#b0bec5; box-shadow:none; cursor:not-allowed; }

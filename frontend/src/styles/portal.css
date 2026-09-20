@@ -1,0 +1,102 @@
+/* ─── Portal Landing ─── */
+.portal-root {
+  min-height: 100vh;
+  background: linear-gradient(145deg, #0d47a1 0%, #1565c0 55%, #42a5f5 100%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 32px 20px;
+  gap: 0;
+}
+
+.portal-brand {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin-bottom: 36px;
+}
+
+.portal-brand h1 {
+  font-size: 1.8rem;
+  font-weight: 900;
+  color: #ffffff;
+  letter-spacing: 0.06em;
+}
+
+.portal-brand p {
+  font-size: 0.88rem;
+  color: rgba(255,255,255,0.75);
+  margin-top: 2px;
+}
+
+.portal-heading {
+  font-size: 1.4rem;
+  font-weight: 800;
+  color: #ffffff;
+  margin-bottom: 6px;
+}
+
+.portal-sub {
+  font-size: 1rem;
+  color: rgba(255,255,255,0.7);
+  margin-bottom: 36px;
+}
+
+.portal-cards {
+  display: flex;
+  gap: 20px;
+  flex-wrap: wrap;
+  justify-content: center;
+  margin-bottom: 36px;
+}
+
+.portal-card {
+  width: 260px;
+  background: rgba(255,255,255,0.12);
+  border: 2px solid rgba(255,255,255,0.25);
+  border-radius: 18px;
+  padding: 32px 24px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  backdrop-filter: blur(10px);
+  font-family: inherit;
+  color: #fff;
+  text-align: center;
+}
+
+.portal-card:hover {
+  background: rgba(255,255,255,0.2);
+  border-color: rgba(255,255,255,0.5);
+  transform: translateY(-4px);
+  box-shadow: 0 12px 32px rgba(0,0,0,0.2);
+}
+
+.portal-card--doctor { border-color: rgba(165,214,167,0.5); }
+.portal-card--doctor:hover { border-color: #a5d6a7; background: rgba(165,214,167,0.15); }
+
+.portal-card__icon { font-size: 2.8rem; }
+
+.portal-card h3 { font-size: 1.15rem; font-weight: 800; }
+
+.portal-card p { font-size: 0.85rem; color: rgba(255,255,255,0.75); line-height: 1.5; }
+
+.portal-card__cta {
+  margin-top: 4px;
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: #fff;
+  background: rgba(255,255,255,0.15);
+  padding: 8px 20px;
+  border-radius: 99px;
+}
+
+.portal-footer {
+  font-size: 0.78rem;
+  color: rgba(255,255,255,0.45);
+  text-align: center;
+}

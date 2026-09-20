@@ -1,0 +1,136 @@
+.reg-root {
+  min-height: 100vh;
+  background: #f0f4f8;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 40px 20px;
+  font-family: 'Noto Sans', sans-serif;
+}
+
+.reg-container {
+  background: white;
+  max-width: 650px;
+  width: 100%;
+  border-radius: 12px;
+  box-shadow: 0 10px 40px rgba(0,0,0,0.1);
+  overflow: hidden;
+}
+
+.reg-header {
+  background: #1565c0;
+  color: white;
+  padding: 30px;
+  text-align: center;
+}
+
+.reg-header h2 {
+  margin: 0 0 10px 0;
+  font-size: 1.8rem;
+}
+
+.reg-header p {
+  margin: 0;
+  opacity: 0.9;
+  font-size: 0.95rem;
+}
+
+.reg-body {
+  padding: 30px;
+}
+
+.reg-form-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 20px;
+}
+
+.reg-form-group {
+  display: flex;
+  flex-direction: column;
+}
+
+.reg-form-group.full-width {
+  grid-column: span 2;
+}
+
+.reg-form-group label {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: #444;
+  margin-bottom: 6px;
+}
+
+.reg-input {
+  padding: 12px;
+  border: 1px solid #ccc;
+  border-radius: 6px;
+  font-size: 0.95rem;
+  transition: border-color 0.2s;
+  font-family: inherit;
+}
+
+.reg-input:focus {
+  border-color: #1565c0;
+  outline: none;
+}
+
+textarea.reg-input {
+  resize: vertical;
+  min-height: 100px;
+}
+
+.reg-btn {
+  grid-column: span 2;
+  background: #4caf50;
+  color: white;
+  padding: 14px;
+  font-size: 1rem;
+  font-weight: 700;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: background 0.2s;
+  margin-top: 10px;
+}
+
+.reg-btn:hover {
+  background: #388e3c;
+}
+
+.reg-success {
+  text-align: center;
+  padding: 60px 30px;
+}
+
+.reg-success h2 {
+  color: #2e7d32;
+  margin-bottom: 16px;
+}
+
+.reg-success-btn {
+  background: #1565c0;
+  color: white;
+  border: none;
+  padding: 12px 24px;
+  border-radius: 6px;
+  font-weight: 600;
+  margin-top: 24px;
+  cursor: pointer;
+}
+
+.reg-success-btn:hover {
+  background: #0d47a1;
+}
+
+@media (max-width: 600px) {
+  .reg-form-grid {
+    grid-template-columns: 1fr;
+  }
+  .reg-form-group.full-width {
+    grid-column: span 1;
+  }
+  .reg-btn {
+    grid-column: span 1;
+  }
+}

@@ -1,0 +1,225 @@
+.ab-header {
+  background: rgba(21, 101, 192, 0.98);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.15);
+  padding: 0;
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  box-shadow: 0 4px 16px rgba(10, 35, 65, 0.12);
+}
+
+.ab-header__inner {
+  max-width: var(--max-w-page, 1160px);
+  margin: 0 auto;
+  padding: 10px clamp(12px, 3vw, 24px);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.ab-header__brand-btn {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: none;
+  border: none;
+  cursor: pointer;
+  text-align: left;
+  padding: 4px;
+  border-radius: var(--radius-sm, 8px);
+  min-width: 0;
+  flex-shrink: 1;
+}
+
+.ab-header__brand-btn:focus-visible {
+  outline: 2px solid #ffffff;
+  outline-offset: 2px;
+}
+
+.ab-header__logo {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.ab-header__brand {
+  min-width: 0;
+}
+
+.ab-header__name {
+  display: block;
+  color: #ffffff;
+  font-size: 1.2rem;
+  font-weight: 800;
+  letter-spacing: -0.01em;
+  line-height: 1.2;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.ab-header__tagline {
+  display: block;
+  color: rgba(255, 255, 255, 0.8);
+  font-size: 0.74rem;
+  font-weight: 500;
+  margin-top: 2px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.ab-header__right {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.ab-header__active-call-btn {
+  background: #16a34a;
+  color: #ffffff;
+  border: none;
+  padding: 6px 14px;
+  border-radius: var(--radius-full, 9999px);
+  font-weight: 700;
+  font-size: 0.82rem;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  animation: pulse 1.8s infinite;
+  box-shadow: 0 0 10px rgba(22, 163, 74, 0.4);
+  white-space: nowrap;
+}
+
+.ab-header__doctor-btn {
+  background: rgba(255, 255, 255, 0.12);
+  border: 1px solid rgba(255, 255, 255, 0.35);
+  color: #ffffff;
+  padding: 7px 12px;
+  border-radius: var(--radius-sm, 8px);
+  font-size: 0.82rem;
+  font-weight: 700;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all 0.15s ease;
+  min-height: 36px;
+  display: inline-flex;
+  align-items: center;
+}
+
+.ab-header__doctor-btn:hover {
+  background: rgba(255, 255, 255, 0.22);
+  border-color: rgba(255, 255, 255, 0.55);
+}
+
+.ab-header__badge {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: rgba(255, 255, 255, 0.15);
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  color: #ffffff;
+  font-size: 0.74rem;
+  font-weight: 600;
+  padding: 6px 12px;
+  border-radius: var(--radius-full, 9999px);
+  white-space: nowrap;
+}
+
+.ab-header__patient-btn {
+  border: 1px solid rgba(255, 255, 255, 0.6);
+  border-radius: var(--radius-sm, 8px);
+  padding: 7px 13px;
+  background: #ffffff;
+  color: #0d47a1;
+  font-size: 0.82rem;
+  font-weight: 800;
+  cursor: pointer;
+  white-space: nowrap;
+  min-height: 36px;
+  display: inline-flex;
+  align-items: center;
+  transition: all 0.15s ease;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.1);
+}
+
+.ab-header__patient-btn:hover {
+  background: #f0f7ff;
+  transform: translateY(-1px);
+}
+
+.ab-header__lang-btn {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  background: rgba(255, 255, 255, 0.15);
+  border: 1px solid rgba(255, 255, 255, 0.35);
+  border-radius: var(--radius-sm, 8px);
+  color: #ffffff;
+  padding: 7px 11px;
+  cursor: pointer;
+  font-size: 0.82rem;
+  font-weight: 700;
+  transition: background 0.15s ease;
+  white-space: nowrap;
+  min-height: 36px;
+}
+
+.ab-header__lang-btn:hover {
+  background: rgba(255, 255, 255, 0.25);
+}
+
+.ab-header__lang-code {
+  max-width: 68px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* ── Responsive Adaptations ── */
+@media (max-width: 900px) {
+  .ab-header__badge {
+    display: none;
+  }
+}
+
+@media (max-width: 640px) {
+  .ab-header__tagline {
+    display: none;
+  }
+  .ab-header__name {
+    font-size: 1.05rem;
+  }
+  .ab-header__doctor-btn {
+    display: none; /* Accessible from mobile navigation or footer */
+  }
+  .ab-header__patient-btn {
+    padding: 6px 10px;
+    font-size: 0.76rem;
+  }
+  .ab-header__lang-btn {
+    padding: 6px 9px;
+    font-size: 0.76rem;
+  }
+}
+
+@media (max-width: 360px) {
+  .ab-header__name {
+    font-size: 0.95rem;
+  }
+  .ab-header__inner {
+    padding-left: 8px;
+    padding-right: 8px;
+    gap: 6px;
+  }
+  .ab-header__patient-btn {
+    padding: 5px 8px;
+    font-size: 0.72rem;
+  }
+}

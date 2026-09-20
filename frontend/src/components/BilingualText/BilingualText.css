@@ -1,0 +1,33 @@
+.bi-text {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: inherit;
+  gap: 0.1em;
+  line-height: 1.3;
+}
+
+.bi-text__en {
+  display: block;
+  font-weight: 700;
+  color: inherit;
+}
+
+.bi-text__native {
+  display: block;
+  font-weight: 500;
+  opacity: 0.72;
+  color: inherit;
+}
+
+/* Sizes */
+.bi-text--sm .bi-text__en     { font-size: 0.85em; }
+.bi-text--sm .bi-text__native { font-size: 0.77em; }
+
+.bi-text--md .bi-text__en     { font-size: 1em; }
+.bi-text--md .bi-text__native { font-size: 0.87em; }
+
+.bi-text--lg .bi-text__en     { font-size: 1.1em; }
+.bi-text--lg .bi-text__native { font-size: 0.95em; }
+
+/* Inside buttons keep items centred */
+button .bi-text { align-items: center; }

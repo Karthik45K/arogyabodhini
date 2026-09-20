@@ -1,0 +1,62 @@
+.croom-root { display:flex; flex-direction:column; min-height:100vh; background:#f0f4f8; font-family:'Noto Sans',Arial,sans-serif; }
+
+/* Top bar */
+.croom-topbar { background:#fff; border-bottom:2px solid #e0e0e0; padding:12px 20px; display:flex; align-items:center; gap:16px; position:sticky; top:0; z-index:10; }
+.croom-back-btn { padding:9px 16px; border-radius:8px; font-size:0.9rem; font-weight:700; border:2px solid #90a4ae; background:#fff; color:#37474f; cursor:pointer; font-family:inherit; transition:all .15s; }
+.croom-back-btn:hover { background:#eceff1; }
+.croom-topbar__center { flex:1; display:flex; align-items:center; gap:12px; }
+.croom-topbar__title { font-size:1.1rem; font-weight:800; color:#1a2332; }
+.croom-completed-badge { background:#e8f5e9; color:#2e7d32; border:1.5px solid #a5d6a7; font-size:0.78rem; font-weight:700; padding:4px 12px; border-radius:99px; }
+.croom-topbar__doc { display:flex; align-items:center; gap:8px; font-size:0.9rem; font-weight:700; color:#37474f; }
+.croom-topbar__avatar { width:32px; height:32px; border-radius:50%; color:#fff; font-size:0.8rem; font-weight:900; display:flex; align-items:center; justify-content:center; }
+
+/* Body */
+.croom-body { display:flex; flex:1; gap:16px; padding:20px; max-height:calc(100vh - 64px); overflow:hidden; }
+
+/* Left panel */
+.croom-left { flex:1.2; display:flex; flex-direction:column; gap:12px; overflow-y:auto; }
+
+.croom-video-wrap { flex:1; display:flex; flex-direction:column; min-height:420px; }
+
+/* Tabs */
+.croom-tabs { display:flex; gap:6px; background:#fff; border-radius:10px; padding:6px; box-shadow:0 2px 8px rgba(0,0,0,.06); }
+.croom-tab { flex:1; padding:10px; border-radius:8px; font-size:0.88rem; font-weight:700; background:none; border:none; color:#78909c; cursor:pointer; font-family:inherit; transition:all .15s; }
+.croom-tab:hover { background:#f5f7fa; color:#37474f; }
+.croom-tab--active { background:#1565c0; color:#fff; }
+
+/* Right panel */
+.croom-right { width:320px; flex-shrink:0; display:flex; flex-direction:column; gap:12px; overflow-y:auto; }
+
+/* Cards */
+.croom-patient-card, .croom-symptoms-card, .croom-ai-card, .croom-notes-summary {
+  background:#fff; border-radius:12px; padding:16px; box-shadow:0 2px 8px rgba(0,0,0,.06);
+}
+
+.croom-ai-card { border-left:4px solid #e0e0e0; }
+
+.croom-section-title { font-size:0.88rem; font-weight:800; color:#1a2332; margin-bottom:12px; padding-bottom:8px; border-bottom:1.5px solid #f0f0f0; }
+
+.croom-info-grid { display:grid; grid-template-columns:1fr 1fr; gap:10px; }
+.croom-info-grid > div { display:flex; flex-direction:column; gap:2px; }
+.croom-info-grid label { font-size:0.7rem; font-weight:700; color:#90a4ae; text-transform:uppercase; }
+.croom-info-grid span  { font-size:0.9rem; font-weight:600; color:#1a2332; }
+
+.croom-symptoms-text { font-size:0.9rem; color:#37474f; line-height:1.6; }
+
+.croom-ai-sev { padding:8px 12px; border-radius:8px; font-size:0.85rem; font-weight:700; margin-bottom:10px; }
+
+.croom-ai-row { display:flex; flex-direction:column; gap:6px; margin-bottom:8px; }
+.croom-ai-row label { font-size:0.75rem; font-weight:700; color:#78909c; text-transform:uppercase; }
+
+.croom-chips { display:flex; flex-wrap:wrap; gap:6px; }
+.croom-chip  { padding:4px 10px; border-radius:99px; background:#e8f0fe; color:#1565c0; font-size:0.8rem; font-weight:600; border:1px solid #9fa8da; }
+
+.croom-spec { font-size:0.9rem; font-weight:700; color:#1565c0; }
+.croom-urgency { font-size:0.82rem; color:#546e7a; background:#f5f7fa; border-radius:6px; padding:8px 10px; margin-top:4px; }
+
+.croom-notes-summary p { font-size:0.88rem; color:#37474f; margin-bottom:4px; }
+
+@media (max-width:900px) {
+  .croom-body  { flex-direction:column; overflow:auto; max-height:none; }
+  .croom-right { width:100%; }
+}

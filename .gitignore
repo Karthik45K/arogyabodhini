@@ -1,0 +1,41 @@
+# Environment files
+.env
+.env.*
+!.env.example
+
+# Dependencies
+node_modules/
+
+# Generated build output
+dist/
+
+# Logs and local runtime files
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Temporary/editor files
+coverage/
+.tmp/
+tmp/
+temp/
+.vscode/
+.DS_Store
+Thumbs.db
+
+# Local test/debug output
+server/test-results/
+server/debug-output/
+
+# Environment / secrets
+.env
+.env.*
+!.env.example
+
+# Dependencies
+node_modules/
+
+# Build output
+dist/

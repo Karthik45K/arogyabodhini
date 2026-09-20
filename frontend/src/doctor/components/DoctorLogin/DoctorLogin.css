@@ -1,0 +1,167 @@
+/* ─── Root ─── */
+.dr-login-root {
+  min-height: 100vh;
+  background: linear-gradient(145deg, #0d47a1 0%, #1565c0 55%, #1976d2 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+}
+
+/* ─── Card ─── */
+.dr-login-card {
+  background: #ffffff;
+  border-radius: 20px;
+  padding: 40px 36px 32px;
+  width: 100%;
+  max-width: 420px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  box-shadow: 0 20px 60px rgba(0,0,0,0.25);
+  animation: fadeIn 0.35s ease both;
+}
+
+.dr-login-logo   { margin-bottom: 12px; }
+.dr-login-brand  { font-size: 1.2rem; font-weight: 900; color: #1565c0; letter-spacing: 0.06em; margin-bottom: 2px; }
+.dr-login-subtitle { font-size: 0.78rem; font-weight: 600; color: #78909c; letter-spacing: 0.1em; text-transform: uppercase; margin-bottom: 20px; }
+.dr-login-title  { font-size: 1.5rem; font-weight: 800; color: #1a2332; margin-bottom: 24px; }
+
+/* ─── Form ─── */
+.dr-login-form { width: 100%; display: flex; flex-direction: column; gap: 16px; }
+
+.dr-login-field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.dr-login-field label {
+  font-size: 0.88rem;
+  font-weight: 700;
+  color: #37474f;
+}
+
+.dr-login-input {
+  padding: 13px 16px;
+  border: 2px solid #e0e0e0;
+  border-radius: 10px;
+  font-size: 1rem;
+  font-family: inherit;
+  color: #1a2332;
+  background: #fafafa;
+  transition: border-color 0.15s, box-shadow 0.15s;
+  width: 100%;
+}
+
+.dr-login-input:focus {
+  border-color: #1565c0;
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(21,101,192,0.14);
+  background: #fff;
+}
+
+.dr-login-pass-wrap   { position: relative; }
+.dr-login-pass-wrap .dr-login-input { padding-right: 48px; }
+
+.dr-login-pass-toggle {
+  position: absolute;
+  right: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 1.1rem;
+  padding: 0;
+  line-height: 1;
+}
+
+/* ─── Error ─── */
+.dr-login-error {
+  background: #ffebee;
+  border: 1.5px solid #ef9a9a;
+  color: #c62828;
+  border-radius: 8px;
+  padding: 10px 14px;
+  font-size: 0.9rem;
+  font-weight: 600;
+}
+
+/* ─── Buttons ─── */
+.dr-login-btn {
+  width: 100%;
+  padding: 15px;
+  border-radius: 12px;
+  background: #1565c0;
+  color: #fff;
+  font-size: 1.05rem;
+  font-weight: 800;
+  border: none;
+  cursor: pointer;
+  transition: all 0.18s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  font-family: inherit;
+  box-shadow: 0 4px 14px rgba(21,101,192,0.35);
+  margin-top: 4px;
+}
+
+.dr-login-btn:hover:not(:disabled) {
+  background: #0d47a1;
+  transform: translateY(-1px);
+}
+
+.dr-login-btn:disabled { background: #b0bec5; box-shadow: none; cursor: not-allowed; }
+
+.dr-login-spinner {
+  width: 18px; height: 18px;
+  border: 2.5px solid rgba(255,255,255,0.4);
+  border-top-color: #fff;
+  border-radius: 50%;
+  animation: spin 0.7s linear infinite;
+  display: inline-block;
+}
+
+.dr-login-demo-btn {
+  width: 100%;
+  padding: 12px;
+  border-radius: 10px;
+  background: #f5f7fa;
+  color: #1565c0;
+  font-size: 0.9rem;
+  font-weight: 700;
+  border: 2px solid #e0e0e0;
+  cursor: pointer;
+  font-family: inherit;
+  transition: all 0.15s;
+}
+
+.dr-login-demo-btn:hover { background: #e8f0fe; border-color: #9fa8da; }
+
+.dr-login-demo-hint {
+  font-size: 0.78rem;
+  color: #90a4ae;
+  text-align: center;
+  margin-top: 4px;
+}
+
+.dr-login-switch {
+  margin-top: 18px;
+  font-size: 0.88rem;
+  color: #78909c;
+  font-weight: 600;
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-family: inherit;
+  transition: color 0.15s;
+}
+
+.dr-login-switch:hover { color: #1565c0; }
+
+@media (max-width: 440px) {
+  .dr-login-card { padding: 28px 20px 24px; }
+}
