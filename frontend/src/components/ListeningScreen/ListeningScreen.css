@@ -197,14 +197,7 @@
 }
 
 .listening-btn--stop {
-  background: #c62828;
-  color: #ffffff;
-  box-shadow: 0 4px 14px rgba(198,40,40,0.35);
-}
-
-.listening-btn--stop:hover {
-  background: #b71c1c;
-  transform: translateY(-1px);
+  display: none;
 }
 
 .listening-btn--submit {

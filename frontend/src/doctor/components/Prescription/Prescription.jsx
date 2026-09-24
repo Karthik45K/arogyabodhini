@@ -1,4 +1,5 @@
 import React, { useState } from 'react'
+import consultationService from '../../services/consultationService'
 import './Prescription.css'
 
 const Prescription = ({ doctor, consultation, notes, existing, onSave }) => {
@@ -9,39 +10,80 @@ const Prescription = ({ doctor, consultation, notes, existing, onSave }) => {
   const [instructions, setInstructions] = useState(existing?.instructions || '')
   const [saved, setSaved] = useState(!!existing)
   const [saveMessage, setSaveMessage] = useState('')
+  const [saving, setSaving] = useState(false)
+  const [sending, setSending] = useState(false)
+  const [channels, setChannels] = useState({ email: true, whatsapp: true, sms: false })
+  const [deliveryStatus, setDeliveryStatus] = useState({
+    email: existing?.emailDelivery || null,
+    whatsapp: existing?.whatsappDelivery || null,
+    sms: existing?.smsDelivery || null,
+  })
 
   const meds = notes?.medicines || existing?.medicines || []
   const diagnosis = notes?.diagnosis || existing?.diagnosis || 'General Clinical Evaluation'
   const advice = notes?.advice || existing?.advice || ''
   const followUp = notes?.followUp || existing?.followUp || 'As needed or if symptoms persist'
+  const signed = existing?.signatureStatus === 'cryptographically_signed'
+  const licenseLabel = doctor?.licenseIsDemo
+    ? `Demo registration: ${doctor?.regNo || 'DEMO-REG'}`
+    : (doctor?.regNo || 'Not provided')
 
-  // Generate a verified digital signature hash
-  const signatureHash = existing?.digitalSignatureHash || 
-    `RX-SIG-${Math.random().toString(36).substring(2, 8).toUpperCase()}-${Date.now().toString(36).toUpperCase()}`
+  const formatChannelStatus = (result) => {
+    if (!result) return 'Not sent'
+    if (result.sent) return 'Sent'
+    if (result.reason === 'not_configured' || result.configured === false) return 'Not configured'
+    if (result.reason === 'not_requested') return 'Not requested'
+    return 'Failed'
+  }
 
-  const handleSave = () => {
-    const rx = {
-      doctorName:   doctor?.name,
-      doctorSpec:   doctor?.spec,
-      doctorReg:    doctor?.regNo || 'MCI-VERIFIED',
-      hospital:     doctor?.hospital,
-      patientName:  consultation?.patientName,
-      patientAge:   consultation?.patientAge,
-      patientGender:consultation?.patientGender,
-      patientEmail: consultation?.patientEmail || consultation?.patientContact,
-      diagnosis,
-      medicines:    meds,
-      advice,
-      followUp,
-      instructions: instructions.trim(),
-      digitalSignatureHash: signatureHash,
-      date,
-      time,
+  const handleSave = async () => {
+    setSaving(true)
+    setSaveMessage('')
+    try {
+      const updated = await onSave({
+        diagnosis,
+        medicines: meds,
+        advice,
+        followUp,
+        instructions: instructions.trim(),
+      })
+      setSaved(true)
+      const rx = updated?.prescription
+      setDeliveryStatus({
+        email: rx?.emailDelivery || null,
+        whatsapp: rx?.whatsappDelivery || null,
+        sms: rx?.smsDelivery || null,
+      })
+      setSaveMessage('Cryptographically signed prescription saved. Choose delivery channels below to send.')
+    } catch (err) {
+      setSaveMessage(err.message || 'Unable to save prescription.')
+    } finally {
+      setSaving(false)
     }
-    onSave(rx)
-    setSaved(true)
-    setSaveMessage('✓ Prescription certified, signed & saved. Dispatched to patient email!')
-    setTimeout(() => setSaveMessage(''), 8000)
+  }
+
+  const handleSend = async () => {
+    if (!consultation?.id) return
+    if (!channels.email && !channels.whatsapp && !channels.sms) {
+      setSaveMessage('Select at least one delivery channel.')
+      return
+    }
+    setSending(true)
+    setSaveMessage('')
+    try {
+      const data = await consultationService.deliverPrescription(consultation.id, channels)
+      const d = data.delivery || {}
+      setDeliveryStatus({
+        email: d.email || null,
+        whatsapp: d.whatsapp || null,
+        sms: d.sms || null,
+      })
+      setSaveMessage('Delivery finished. See per-channel status below.')
+    } catch (err) {
+      setSaveMessage(err.message || 'Unable to deliver prescription.')
+    } finally {
+      setSending(false)
+    }
   }
 
   const handlePrintPDF = () => {
@@ -51,6 +93,7 @@ const Prescription = ({ doctor, consultation, notes, existing, onSave }) => {
       return
     }
 
+    const signatureHash = existing?.signingKeyId || existing?.digitalSignatureHash || 'unsigned'
     const medicinesRows = meds.map((m, i) => `
       <tr>
         <td style="padding: 10px; border-bottom: 1px solid #e2e8f0; font-weight: 600;">${i + 1}</td>
@@ -207,7 +250,7 @@ const Prescription = ({ doctor, consultation, notes, existing, onSave }) => {
             <div style="font-size: 13px; color: #0284c7; font-weight: 600;">${doctor?.spec || 'Specialist'}</div>
           </div>
           <div style="text-align: right; font-size: 12px; color: #64748b;">
-            <div>Council Reg: <strong>${doctor?.regNo || 'MCI-VERIFIED'}</strong></div>
+            <div>Registration: <strong>${licenseLabel}</strong></div>
             <div>Consultation Mode: <strong>${consultation?.consultationType === 'video' ? 'Teleconsultation (Video)' : 'In-Person Visit'}</strong></div>
           </div>
         </div>
@@ -272,13 +315,13 @@ const Prescription = ({ doctor, consultation, notes, existing, onSave }) => {
         <div class="signature-section">
           <div class="seal-box">
             <div style="font-size: 12px; font-weight: 800; color: #0284c7; text-transform: uppercase;">
-              ✓ Verified Digital Prescription
+              Cryptographically signed prescription
             </div>
             <div style="font-size: 11px; color: #475569; margin: 4px 0;">
-              Telemedicine Practice Guidelines 2020
+              Not a government e-prescription
             </div>
             <div style="font-family: monospace; font-size: 10px; color: #64748b; margin-top: 4px;">
-              Hash: ${signatureHash}
+              Key: ${signatureHash}
             </div>
           </div>
 
@@ -289,14 +332,14 @@ const Prescription = ({ doctor, consultation, notes, existing, onSave }) => {
             <div style="border-top: 1.5px solid #0f172a; width: 180px; margin-left: auto; padding-top: 4px;">
               <div style="font-weight: 700; font-size: 13px; color: #0f172a;">${doctor?.name || 'Doctor'}</div>
               <div style="font-size: 11px; color: #64748b;">${doctor?.spec || 'Consulting Physician'}</div>
-              <div style="font-size: 11px; color: #64748b;">Reg No: ${doctor?.regNo || 'MCI-VERIFIED'}</div>
+              <div style="font-size: 11px; color: #64748b;">${licenseLabel}</div>
             </div>
           </div>
         </div>
 
         <div class="footer">
-          This is an official computer-generated digital prescription certified under the Registered Medical Practitioner (RMP) Telemedicine Rules.
-          Valid across all certified pharmacies in India. For emergencies, please dial 108 immediately.
+          This is a cryptographically signed prescription issued by an authenticated doctor. It is not a regulated government e-prescription.
+          For emergencies, please dial 108 immediately.
         </div>
       </body>
       </html>
@@ -353,7 +396,7 @@ const Prescription = ({ doctor, consultation, notes, existing, onSave }) => {
             <span className="rx-section-kicker">Consulting Specialist</span>
             <h3 className="rx-doc-name">{doctor?.name}</h3>
             <p className="rx-doc-spec">{doctor?.spec}</p>
-            <p className="rx-doc-reg">Medical Council Reg: <strong>{doctor?.regNo || 'MCI-VERIFIED'}</strong></p>
+            <p className="rx-doc-reg">{licenseLabel}</p>
           </div>
 
           <div className="rx-party-card rx-party-card--patient">
@@ -362,7 +405,7 @@ const Prescription = ({ doctor, consultation, notes, existing, onSave }) => {
             <p className="rx-patient-details">
               {consultation?.patientAge ? `${consultation.patientAge} yrs` : '–'} &bull; {consultation?.patientGender || '–'}
             </p>
-            <p className="rx-patient-contact">Phone/ID: {consultation?.patientPhone || consultation?.patientId || 'Registered'}</p>
+            <p className="rx-patient-contact">Patient ID: {consultation?.patientId || '—'} · {consultation?.patientPhone || ''}</p>
           </div>
         </div>
 
@@ -444,10 +487,10 @@ const Prescription = ({ doctor, consultation, notes, existing, onSave }) => {
                 <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
                 <path d="M9 12l2 2 4-4"/>
               </svg>
-              <span>OFFICIALLY CERTIFIED</span>
+              <span>{signed ? 'CRYPTOGRAPHICALLY SIGNED' : 'NOT SIGNED YET'}</span>
             </div>
-            <p className="rx-seal-desc">Digitally Signed under Indian Telemedicine Practice Guidelines 2020</p>
-            <code className="rx-sig-hash">{signatureHash}</code>
+            <p className="rx-seal-desc">Cryptographically signed prescription — not a government e-prescription.</p>
+            <code className="rx-sig-hash">{existing?.signingKeyId || existing?.signature?.slice(0, 40) || 'Will be signed by the server'}</code>
           </div>
 
           <div className="rx-doctor-signoff">
@@ -456,13 +499,13 @@ const Prescription = ({ doctor, consultation, notes, existing, onSave }) => {
             <div className="rx-sign-details">
               <strong>{doctor?.name}</strong>
               <span>{doctor?.spec}</span>
-              <span>Reg: {doctor?.regNo || 'MCI-VERIFIED'}</span>
+              <span>{licenseLabel}</span>
             </div>
           </div>
         </div>
 
         <p className="rx-compliance-footer">
-          This e-prescription is digitally certified and compliant with the Information Technology Act 2000 and the Telemedicine Practice Guidelines.
+          This is a cryptographically signed prescription issued by an authenticated doctor. It is not a regulated government e-prescription.
           For emergency care, call 108 or report to the nearest hospital.
         </p>
       </div>
@@ -470,13 +513,13 @@ const Prescription = ({ doctor, consultation, notes, existing, onSave }) => {
       {/* Action Buttons */}
       <div className="rx-action-bar">
         {!saved && (
-          <button id="rx-save-btn" className="rx-btn rx-btn--save" onClick={handleSave}>
+          <button id="rx-save-btn" className="rx-btn rx-btn--save" onClick={handleSave} disabled={saving}>
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
               <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/>
               <polyline points="17 21 17 13 7 13 7 21"/>
               <polyline points="7 3 7 8 15 8"/>
             </svg>
-            Digitally Certify & Dispatch
+            {saving ? 'Signing...' : 'Issue signed prescription'}
           </button>
         )}
         <button id="rx-print-btn" className="rx-btn rx-btn--print" onClick={handlePrintPDF}>
@@ -488,6 +531,53 @@ const Prescription = ({ doctor, consultation, notes, existing, onSave }) => {
           Print / Save A4 PDF
         </button>
       </div>
+
+      {saved && (
+        <div className="rx-delivery-box" style={{ marginTop: 16, padding: 16, border: '2px solid #e2e8f0', borderRadius: 12, background: '#f8fafc' }}>
+          <h4 style={{ margin: '0 0 10px', fontSize: '1.05rem' }}>Send Prescription</h4>
+          <p style={{ margin: '0 0 12px', fontSize: '0.9rem', color: '#64748b' }}>
+            One signed PDF is sent through the channels you select.
+          </p>
+          <label style={{ display: 'block', marginBottom: 8, fontWeight: 700 }}>
+            <input
+              type="checkbox"
+              checked={channels.email}
+              onChange={(e) => setChannels((c) => ({ ...c, email: e.target.checked }))}
+            />{' '}
+            Email (PDF attachment)
+          </label>
+          <label style={{ display: 'block', marginBottom: 8, fontWeight: 700 }}>
+            <input
+              type="checkbox"
+              checked={channels.whatsapp}
+              onChange={(e) => setChannels((c) => ({ ...c, whatsapp: e.target.checked }))}
+            />{' '}
+            WhatsApp (PDF document)
+          </label>
+          <label style={{ display: 'block', marginBottom: 12, fontWeight: 700 }}>
+            <input
+              type="checkbox"
+              checked={channels.sms}
+              onChange={(e) => setChannels((c) => ({ ...c, sms: e.target.checked }))}
+            />{' '}
+            SMS (notification + secure link)
+          </label>
+          <button
+            type="button"
+            id="rx-send-delivery-btn"
+            className="rx-btn rx-btn--save"
+            onClick={handleSend}
+            disabled={sending}
+          >
+            {sending ? 'Sending…' : 'Send Prescription'}
+          </button>
+          <div style={{ marginTop: 12, fontSize: '0.92rem', fontWeight: 700 }}>
+            <div>Email: {formatChannelStatus(deliveryStatus.email)}</div>
+            <div>WhatsApp: {formatChannelStatus(deliveryStatus.whatsapp)}</div>
+            <div>SMS: {formatChannelStatus(deliveryStatus.sms)}</div>
+          </div>
+        </div>
+      )}
 
       {saveMessage && (
         <div className="rx-toast-msg anim-up">{saveMessage}</div>

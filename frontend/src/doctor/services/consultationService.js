@@ -37,6 +37,47 @@ const responseError = async (res, fallbackMessage) => {
 
 export const consultationService = {
 
+  /**
+   * Backend fair match + create consultation for recommended specialty.
+   * Does not switch specialty when no doctor is available.
+   */
+  async matchRequest({
+    specialty,
+    patientAge,
+    patientGender,
+    patientLang,
+    patientSymptoms,
+    symptoms,
+    aiResult,
+    slot,
+    consultationType,
+  }) {
+    if (!patientService.getToken()) {
+      const error = new Error('Please log in to request a video consultation.')
+      error.status = 401
+      throw error
+    }
+    const res = await fetch(`${API}/match`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', ...patientHeaders() },
+      body: JSON.stringify({
+        specialty,
+        patientAge,
+        patientGender,
+        patientLang,
+        patientSymptoms,
+        symptoms,
+        aiResult,
+        slot,
+        consultationType,
+      }),
+    })
+    if (!res.ok) throw await responseError(res, 'Failed to match a doctor.')
+    const data = await res.json()
+    if (!data.success) throw new Error(data.message || 'Failed to match a doctor.')
+    return data
+  },
+
   /** Create a new consultation request (called from Patient AppointmentScreen) */
   async createRequest({ doctorId, doctorName, doctorSpecialty, patientName, patientAge, patientGender, patientLang, patientPhone, patientContact, patientSymptoms, symptoms, aiResult, slot, consultationType }) {
     if (!patientService.getToken()) {
@@ -116,13 +157,39 @@ export const consultationService = {
     return data.success ? data.consultation : null
   },
 
-  /** Save prescription */
+  /** Save prescription (signed). Does not auto-send unless deliveryChannels provided. */
   async savePrescription(id, prescription) {
     const res = await fetch(`${API}/${encodeURIComponent(id)}`, {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json', ...doctorHeaders() },
       body: JSON.stringify({ prescription }),
     })
+    const data = await res.json()
+    if (!res.ok || !data.success) throw new Error(data.message || 'Unable to save prescription.')
+    return data.consultation
+  },
+
+  /** Deliver canonical signed prescription via selected channels */
+  async deliverPrescription(id, channels) {
+    const res = await fetch(`${API}/${encodeURIComponent(id)}/deliver-prescription`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', ...doctorHeaders() },
+      body: JSON.stringify({ channels }),
+    })
+    const data = await res.json()
+    if (!res.ok || !data.success) throw new Error(data.message || 'Unable to deliver prescription.')
+    return data
+  },
+
+  async endCall(id, endedBy, viewer = 'doctor') {
+    const headers = consultationHeaders(viewer)
+    if (!headers.Authorization) return null
+    const res = await fetch(`${API}/${encodeURIComponent(id)}/end-call`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', ...headers },
+      body: JSON.stringify({ endedBy }),
+    })
+    if (!res.ok) return null
     const data = await res.json()
     return data.success ? data.consultation : null
   },

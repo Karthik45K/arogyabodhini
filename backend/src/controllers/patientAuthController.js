@@ -12,10 +12,63 @@ const publicProfile = (patient) => ({
   gender: patient.gender || '',
   phone: patient.phone,
   email: patient.email || '',
+  preferredLanguage: patient.preferredLanguage || '',
   createdAt: patient.createdAt,
 })
 
 const issueSession = (patient) => ({ token: signPatientToken(patient.patientId), patient: publicProfile(patient) })
+
+const normalizeMobile = (phone) => String(phone || '').replace(/\D/g, '').slice(-10)
+
+const normalizeEmail = (email) => String(email || '').trim().toLowerCase()
+
+const continueWithPhone = async (req, res, next) => {
+  try {
+    const name = String(req.body.name || '').trim()
+    const phone = normalizeMobile(req.body.phone)
+    const email = normalizeEmail(req.body.email)
+    const preferredLanguage = String(req.body.preferredLanguage || '').trim()
+
+    if (!name || phone.length !== 10) {
+      return res.status(400).json({ success: false, message: 'Please enter your full name and a 10-digit mobile number.' })
+    }
+    if (!email || !email.includes('@')) {
+      return res.status(400).json({ success: false, message: 'A valid email address is required for prescription delivery.' })
+    }
+
+    let patient = await Patient.findOne({
+      $or: [
+        { phone },
+        { phone: `+91${phone}` },
+        { phone: `+91 ${phone}` },
+        { email },
+      ],
+    })
+
+    if (!patient) {
+      patient = await Patient.create({
+        patientId: createPatientId(),
+        name,
+        phone,
+        email,
+        preferredLanguage,
+        authMethod: 'phone',
+        passwordHash: '',
+      })
+    } else {
+      if (name) patient.name = name
+      patient.phone = phone
+      patient.email = email
+      if (preferredLanguage) patient.preferredLanguage = preferredLanguage
+      await patient.save()
+    }
+
+    const session = issueSession(patient)
+    res.json({ success: true, ...session })
+  } catch (error) {
+    next(error)
+  }
+}
 
 const registerPatient = async (req, res, next) => {
   try {
@@ -58,8 +111,8 @@ const loginPatient = async (req, res, next) => {
     const password = String(req.body.password || '')
     if (!identifier || !password) return res.status(400).json({ success: false, message: 'Email or mobile number and password are required.' })
     const normalized = identifier.toLowerCase()
-    const patient = await Patient.findOne({ $or: [{ email: normalized }, { phone: identifier }] })
-    if (!patient || !verifyPassword(password, patient.passwordHash)) {
+    const patient = await Patient.findOne({ $or: [{ email: normalized }, { phone: identifier }, { phone: identifier.replace(/\D/g, '').slice(-10) }] })
+    if (!patient || !patient.passwordHash || !verifyPassword(password, patient.passwordHash)) {
       return res.status(401).json({ success: false, message: 'Invalid patient login details.' })
     }
     const session = await issueSession(patient)
@@ -71,6 +124,34 @@ const loginPatient = async (req, res, next) => {
 
 const getProfile = (req, res) => res.json({ success: true, patient: publicProfile(req.patient) })
 
+const updateProfile = async (req, res, next) => {
+  try {
+    const patient = req.patient
+    const email = String(req.body.email || '').trim().toLowerCase()
+    const age = String(req.body.age || '').trim()
+    const gender = String(req.body.gender || '').trim()
+    const preferredLanguage = String(req.body.preferredLanguage || '').trim()
+    const name = String(req.body.name || '').trim()
+    const phone = String(req.body.phone || '').replace(/\D/g, '').slice(-10)
+
+    if (email) {
+      if (!email.includes('@')) {
+        return res.status(400).json({ success: false, message: 'Enter a valid email address.' })
+      }
+      patient.email = email
+    }
+    if (name) patient.name = name
+    if (phone.length === 10) patient.phone = phone
+    if (age) patient.age = age
+    if (gender) patient.gender = gender
+    if (preferredLanguage) patient.preferredLanguage = preferredLanguage
+    await patient.save()
+    res.json({ success: true, patient: publicProfile(patient) })
+  } catch (error) {
+    next(error)
+  }
+}
+
 const logoutPatient = async (req, res, next) => {
   try {
     res.json({ success: true })
@@ -79,4 +160,4 @@ const logoutPatient = async (req, res, next) => {
   }
 }
 
-module.exports = { getProfile, loginPatient, logoutPatient, registerPatient }
+module.exports = { getProfile, updateProfile, loginPatient, logoutPatient, registerPatient, continueWithPhone }

@@ -162,6 +162,7 @@ const ConsultationRoom = ({ consultation, onBack }) => {
   const [savedNotes, setSavedNotes]   = useState(consultation.notes || null)
   const [savedRx,    setSavedRx]      = useState(consultation.prescription || null)
   const [completed,  setCompleted]    = useState(consultation.status === 'completed')
+  const [callEnded,  setCallEnded]    = useState(consultation.callStatus === 'ended')
 
   if (!consultation) return null
   const { aiResult, patientName, patientAge, patientGender, patientLang, symptoms, slot, consultationType } = consultation
@@ -175,8 +176,9 @@ const ConsultationRoom = ({ consultation, onBack }) => {
   }
 
   const handleSaveRx = async (rx) => {
-    await consultationService.savePrescription(consultation.id, rx)
-    setSavedRx(rx)
+    const updated = await consultationService.savePrescription(consultation.id, rx)
+    setSavedRx(updated?.prescription || rx)
+    return updated
   }
 
   return (
@@ -189,6 +191,7 @@ const ConsultationRoom = ({ consultation, onBack }) => {
         </button>
         <div className="croom-topbar__center">
           <span className="croom-topbar__title">Consultation Room</span>
+          {callEnded && <span className="croom-completed-badge">Call ended</span>}
           {completed && <span className="croom-completed-badge">✅ Completed</span>}
         </div>
         <div className="croom-topbar__doc">
@@ -230,6 +233,7 @@ const ConsultationRoom = ({ consultation, onBack }) => {
               role="doctor"
               userName={doctor?.name || 'Doctor'}
               autoJoin={consultation.consultationType === 'video'}
+              onEnd={() => setCallEnded(true)}
             />
           </div>
 

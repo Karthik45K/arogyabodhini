@@ -3,7 +3,7 @@ import './MobileNav.css'
 
 const MobileNav = ({ currentTab, onTabChange, activeCallCount = 0 }) => {
   return (
-    <nav className="mobile-nav" aria-label="Mobile Navigation">
+    <nav className="mobile-nav" aria-label="Main">
       <button
         id="mob-nav-home"
         className={`mobile-nav__item ${currentTab === 'home' ? 'mobile-nav__item--active' : ''}`}
@@ -14,33 +14,33 @@ const MobileNav = ({ currentTab, onTabChange, activeCallCount = 0 }) => {
       </button>
 
       <button
-        id="mob-nav-consultations"
-        className={`mobile-nav__item ${currentTab === 'consultations' ? 'mobile-nav__item--active' : ''}`}
-        onClick={() => onTabChange('consultations')}
+        id="mob-nav-reports"
+        className={`mobile-nav__item ${currentTab === 'reports' ? 'mobile-nav__item--active' : ''}`}
+        onClick={() => onTabChange('reports')}
+      >
+        <span className="mobile-nav__icon">📄</span>
+        <span className="mobile-nav__label">My Reports</span>
+      </button>
+
+      <button
+        id="mob-nav-prescriptions"
+        className={`mobile-nav__item ${currentTab === 'prescriptions' ? 'mobile-nav__item--active' : ''}`}
+        onClick={() => onTabChange('prescriptions')}
       >
         <div className="mobile-nav__icon-wrap">
-          <span className="mobile-nav__icon">📅</span>
+          <span className="mobile-nav__icon">💊</span>
           {activeCallCount > 0 && <span className="mobile-nav__badge">{activeCallCount}</span>}
         </div>
-        <span className="mobile-nav__label">Appointments</span>
+        <span className="mobile-nav__label">My Prescriptions</span>
       </button>
 
       <button
-        id="mob-nav-records"
-        className={`mobile-nav__item ${currentTab === 'records' ? 'mobile-nav__item--active' : ''}`}
-        onClick={() => onTabChange('records')}
+        id="mob-nav-details"
+        className={`mobile-nav__item ${currentTab === 'details' ? 'mobile-nav__item--active' : ''}`}
+        onClick={() => onTabChange('details')}
       >
-        <span className="mobile-nav__icon">📁</span>
-        <span className="mobile-nav__label">Records</span>
-      </button>
-
-      <button
-        id="mob-nav-lang"
-        className="mobile-nav__item"
-        onClick={() => onTabChange('language')}
-      >
-        <span className="mobile-nav__icon">🌐</span>
-        <span className="mobile-nav__label">Language</span>
+        <span className="mobile-nav__icon">👤</span>
+        <span className="mobile-nav__label">My Details</span>
       </button>
     </nav>
   )

@@ -1,5 +1,5 @@
 const express = require('express')
-const { getDoctorsByDisease } = require('../controllers/doctorsController')
+const { getDoctorsByDisease, getDoctorsBySpecialty } = require('../controllers/doctorsController')
 
 const router = express.Router()
 
@@ -9,5 +9,12 @@ const router = express.Router()
  * @access  Public
  */
 router.get('/doctors/by-disease/:disease', getDoctorsByDisease)
+
+/**
+ * @route   GET /api/doctors/by-specialty/:specialty
+ * @desc    Return doctors for an exact recommended specialty (no GP fallback)
+ * @access  Public
+ */
+router.get('/doctors/by-specialty/:specialty', getDoctorsBySpecialty)
 
 module.exports = router

@@ -10,16 +10,16 @@ const API_BASE_URL = API_BASE;
 const initialForm = { name: '', age: '', gender: '', phone: '', email: '', password: '', confirmPassword: '', identifier: '' }
 
 const PatientAccount = ({ onClose, onAuthenticated, initialMode = 'login', initialView = 'profile', showVideoPrompt = false, onJoinVideoRoom }) => {
-  const { patient, register, login, logout, token } = usePatientAuth()
-  const [mode, setMode] = useState(initialMode)
+  const { patient, continueWithPhone, logout, token, updateProfile } = usePatientAuth()
   const [view, setView] = useState(initialView)
   const [form, setForm] = useState(initialForm)
   const [errors, setErrors] = useState({})
   const [items, setItems] = useState([])
   const [submitting, setSubmitting] = useState(false)
-  const [showPassword, setShowPassword] = useState(false)
-  const [showConfirmPassword, setShowConfirmPassword] = useState(false)
+  const [uploadMessage, setUploadMessage] = useState('')
   const [uploading, setUploading] = useState(false)
+  const [deliveryChannels, setDeliveryChannels] = useState(null)
+  const [emailDraft, setEmailDraft] = useState('')
 
   // Prevent background scrolling on mobile & desktop when modal is active
   useEffect(() => {
@@ -40,8 +40,7 @@ const PatientAccount = ({ onClose, onAuthenticated, initialMode = 'login', initi
     setForm(current => ({ ...current, [field]: value }))
     if (errors[field] || errors.form) setErrors(e => ({ ...e, [field]: '', form: '' }))
   }
-  const switchMode = (m) => { setMode(m); setForm(initialForm); setErrors({}) }
-  
+
   const showHistory = async (type) => {
     setView(type)
     setItems([])
@@ -59,6 +58,7 @@ const PatientAccount = ({ onClose, onAuthenticated, initialMode = 'login', initi
       } else if (type === 'prescriptions') {
         const res = await patientService.prescriptions()
         setItems(res.prescriptions || [])
+        setDeliveryChannels(res.deliveryChannels || null)
       }
     } catch (err) {
       console.error('Failed to load history', err)
@@ -84,7 +84,8 @@ const PatientAccount = ({ onClose, onAuthenticated, initialMode = 'login', initi
       await axios.post(`${API_BASE_URL}/api/patient/documents`, formData, {
         headers: { Authorization: `Bearer ${authToken}`, 'Content-Type': 'multipart/form-data' }
       })
-      e.target.value = '' // reset file input
+      e.target.value = ''
+      setUploadMessage('Report uploaded successfully.')
       showHistory('documents')
     } catch (err) {
       console.error(err)
@@ -98,15 +99,8 @@ const PatientAccount = ({ onClose, onAuthenticated, initialMode = 'login', initi
     e.preventDefault()
     setSubmitting(true)
     const newErrors = {}
-    if (mode === 'register') {
-      if (!form.name.trim()) newErrors.name = 'Name is required'
-      if (!form.phone.trim()) newErrors.phone = 'Mobile number is required'
-      if (form.password.length < 6) newErrors.password = 'Password must be at least 6 characters'
-      if (form.password !== form.confirmPassword) newErrors.confirmPassword = 'Passwords do not match'
-    } else {
-      if (!form.identifier.trim()) newErrors.identifier = 'Email or mobile is required'
-      if (!form.password) newErrors.password = 'Password is required'
-    }
+    if (!form.name.trim()) newErrors.name = 'Name is required'
+    if (!form.phone.trim() || form.phone.replace(/\D/g, '').slice(-10).length !== 10) newErrors.phone = 'Enter a 10-digit mobile number'
 
     if (Object.keys(newErrors).length > 0) {
       setErrors(newErrors)
@@ -115,14 +109,10 @@ const PatientAccount = ({ onClose, onAuthenticated, initialMode = 'login', initi
     }
 
     try {
-      if (mode === 'register') {
-        await register(form)
-      } else {
-        await login(form.identifier, form.password)
-      }
+      await continueWithPhone(form.name.trim(), form.phone.replace(/\D/g, '').slice(-10))
       onAuthenticated && onAuthenticated()
     } catch (error) {
-      setErrors({ form: error.response?.data?.message || 'Authentication failed. Please try again.' })
+      setErrors({ form: error.message || 'Unable to continue. Please try again.' })
     } finally {
       setSubmitting(false)
     }
@@ -147,8 +137,10 @@ const PatientAccount = ({ onClose, onAuthenticated, initialMode = 'login', initi
       </tr>
     `).join('')
 
-    const sigHash = rx.digitalSignatureHash || item.digitalSignatureHash || 
-      `RX-SIG-${Math.random().toString(36).substring(2, 8).toUpperCase()}-${Date.now().toString(36).toUpperCase()}`
+    const sigId = rx.signingKeyId || item.prescription?.signingKeyId || item.digitalSignatureHash || ''
+    const doctorReg = item.doctorLicenseIsDemo
+      ? `Demo registration: ${item.doctorRegNo || 'DEMO-REG'}`
+      : (item.doctorRegNo || 'Not provided')
 
     const doctorName = item.doctorName || item.doctor?.name || rx.doctorName || 'Doctor'
     const doctorSpecialty = item.doctorSpecialty || rx.doctorSpec || item.doctor?.spec || 'Specialist'
@@ -303,8 +295,8 @@ const PatientAccount = ({ onClose, onAuthenticated, initialMode = 'login', initi
             <div style="font-size: 13px; color: #0284c7; font-weight: 600;">${doctorSpecialty}</div>
           </div>
           <div style="text-align: right; font-size: 12px; color: #64748b;">
-            <div>Council Reg: <strong>MCI-VERIFIED</strong></div>
-            <div>Status: <strong>Digitally Prescribed & Certified</strong></div>
+            <div>Registration: <strong>${doctorReg}</strong></div>
+            <div>Status: <strong>Cryptographically signed prescription</strong></div>
           </div>
         </div>
 
@@ -363,13 +355,13 @@ const PatientAccount = ({ onClose, onAuthenticated, initialMode = 'login', initi
         <div class="signature-section">
           <div class="seal-box">
             <div style="font-size: 12px; font-weight: 800; color: #0284c7; text-transform: uppercase;">
-              ✓ Verified Digital Signature
+              Cryptographically signed prescription
             </div>
             <div style="font-size: 11px; color: #475569; margin: 4px 0;">
-              Telemedicine Practice Guidelines 2020
+              Not a government e-prescription
             </div>
             <div style="font-family: monospace; font-size: 10px; color: #64748b; margin-top: 4px;">
-              Hash: ${sigHash}
+              Key: ${sigId || 'unsigned'}
             </div>
           </div>
 
@@ -380,13 +372,13 @@ const PatientAccount = ({ onClose, onAuthenticated, initialMode = 'login', initi
             <div style="border-top: 1.5px solid #0f172a; width: 180px; margin-left: auto; padding-top: 4px;">
               <div style="font-weight: 700; font-size: 13px; color: #0f172a;">Dr. ${item.doctorName}</div>
               <div style="font-size: 11px; color: #64748b;">${item.doctorSpecialty || 'Specialist'}</div>
-              <div style="font-size: 11px; color: #64748b;">Council Reg: MCI-VERIFIED</div>
+              <div style="font-size: 11px; color: #64748b;">${doctorReg}</div>
             </div>
           </div>
         </div>
 
         <div class="footer">
-          This digital e-prescription is valid across licensed pharmacies in India under the IT Act 2000.
+          This is a cryptographically signed prescription. It is not a regulated government e-prescription.
           For emergency medical assistance, dial 108 immediately.
         </div>
       </body>
@@ -489,27 +481,36 @@ const PatientAccount = ({ onClose, onAuthenticated, initialMode = 'login', initi
       )
     }
     if (view === 'prescriptions') return (
-      <article className="patient-history__item" key={item.consultationId}>
+      <article className="patient-history__item" key={item.prescriptionId || item.consultationId}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '8px' }}>
           <div>
             <strong>Dr. {item.doctorName}</strong>
-            <span style={{ display: 'block', color: '#64748b', fontSize: '0.8rem', marginTop: '2px' }}>
-              {item.doctorSpecialty ? `${item.doctorSpecialty} • ` : ''}{new Date(item.consultationDate).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })}
+            <span style={{ display: 'block', color: '#64748b', fontSize: '0.95rem', marginTop: '4px' }}>
+              {new Date(item.consultationDate).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })}
             </span>
+            <span style={{ display: 'inline-block', marginTop: '6px', fontWeight: 800, color: '#1565c0' }}>{item.status || 'Signed'}</span>
           </div>
-          <button className="print-btn" onClick={() => handlePrint(item)} style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', background: '#0284c7', color: '#fff', border: 'none', padding: '6px 14px', borderRadius: '6px', cursor: 'pointer', fontWeight: 600, fontSize: '0.82rem' }}>
-            🖨️ Print / PDF
-          </button>
         </div>
-        <p style={{ margin: '8px 0 4px', fontSize: '0.88rem' }}><b>Diagnosis:</b> {item.diagnosis || 'Clinical Consultation'}</p>
-        <p style={{ margin: '4px 0', fontSize: '0.85rem', color: '#334155' }}>
-          <b>Medications:</b> {item.prescription?.medicines?.map(m => `${m.name} (${m.dosage}, ${m.frequency})`).join(', ') || 'None'}
+        <p style={{ margin: '10px 0 4px', fontSize: '1rem' }}><b>Diagnosis:</b> {item.diagnosis || 'Clinical Consultation'}</p>
+        <p style={{ margin: '4px 0', fontSize: '0.95rem' }}>
+          <b>Medicines:</b> {item.prescription?.medicines?.map(m => `${m.name} (${m.dosage})`).join(', ') || 'None'}
         </p>
-        {item.prescription?.advice && (
-          <small style={{ color: '#0369a1', display: 'block', marginTop: '4px' }}>
-            <b>Advice:</b> {item.prescription.advice}
-          </small>
-        )}
+        <div style={{ marginTop: '12px', display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+          <button className="print-btn" onClick={() => handlePrint(item)} style={{ minHeight: '48px', padding: '10px 16px', background: '#0284c7', color: '#fff', border: 'none', borderRadius: '8px', fontWeight: 800, fontSize: '1rem' }}>View</button>
+          <button type="button" onClick={async () => {
+            try {
+              const blob = await patientService.downloadPrescriptionPdf(item.prescriptionId || item.consultationId)
+              const url = URL.createObjectURL(blob)
+              const a = document.createElement('a')
+              a.href = url
+              a.download = `prescription-${item.prescriptionId || item.consultationId}.pdf`
+              a.click()
+              URL.revokeObjectURL(url)
+            } catch (err) {
+              alert(err.message || 'Unable to download PDF.')
+            }
+          }} style={{ minHeight: '48px', padding: '10px 16px', background: '#15803d', color: '#fff', border: 'none', borderRadius: '8px', fontWeight: 800 }}>Download PDF</button>
+        </div>
       </article>
     )
     if (view === 'documents') return (
@@ -525,29 +526,14 @@ const PatientAccount = ({ onClose, onAuthenticated, initialMode = 'login', initi
       <div className="patient-modal-backdrop" onMouseDown={onClose}>
         <section className="patient-modal" onMouseDown={event => event.stopPropagation()} role="dialog" aria-modal="true" aria-labelledby="patient-auth-title">
           <button className="patient-modal__close" onClick={onClose} aria-label="Close">&times;</button>
-          <div className="patient-auth-switch" role="tablist" aria-label="Patient account actions">
-            <button className={mode === 'login' ? 'active' : ''} onClick={() => switchMode('login')} role="tab">Login</button>
-            <button className={mode === 'register' ? 'active' : ''} onClick={() => switchMode('register')} role="tab">Create Account</button>
-          </div>
-          {showVideoPrompt && <div className="patient-video-prompt"><strong>Create a patient account or login to continue</strong><span>Your account lets us save your consultations and prescriptions so you can access them later.</span></div>}
-          <h2 id="patient-auth-title">{mode === 'login' ? 'Patient Login' : 'Create Patient Account'}</h2>
-          <p className="patient-modal__hint">Save your consultations and prescriptions in one secure place.</p>
+          <h2 id="patient-auth-title">Your details</h2>
+          <p className="patient-modal__hint">Enter your name and mobile number.</p>
           <form onSubmit={submit} className="patient-form" noValidate>
-            {mode === 'register' ? <>
-              <label>Full name *<input autoComplete="name" placeholder="e.g. Ananya Sharma" value={form.name} onChange={event => update('name', event.target.value)} aria-invalid={!!errors.name} />{errors.name && <small>{errors.name}</small>}</label>
-              <div className="patient-form__row"><label>Age<input type="number" min="1" max="120" placeholder="e.g. 34" value={form.age} onChange={event => update('age', event.target.value)} /></label><label>Gender<select value={form.gender} onChange={event => update('gender', event.target.value)}><option value="">Select</option><option>Female</option><option>Male</option><option>Other</option></select></label></div>
-              <label>Mobile number *<input autoComplete="tel" type="tel" placeholder="e.g. 9876543210" value={form.phone} onChange={event => update('phone', event.target.value)} aria-invalid={!!errors.phone} />{errors.phone && <small>{errors.phone}</small>}</label>
-              <label>Email <span className="patient-form__optional">(optional)</span><input autoComplete="email" type="email" placeholder="you@example.com" value={form.email} onChange={event => update('email', event.target.value)} /></label>
-              <label>Password *<span className="patient-password"><input autoComplete="new-password" type={showPassword ? 'text' : 'password'} placeholder="At least 6 characters" value={form.password} onChange={event => update('password', event.target.value)} aria-invalid={!!errors.password} /><button type="button" onClick={() => setShowPassword(value => !value)} aria-label={showPassword ? 'Hide password' : 'Show password'}>{showPassword ? 'Hide' : 'Show'}</button></span>{errors.password && <small>{errors.password}</small>}</label>
-              <label>Confirm password *<span className="patient-password"><input autoComplete="new-password" type={showConfirmPassword ? 'text' : 'password'} placeholder="Re-enter your password" value={form.confirmPassword} onChange={event => update('confirmPassword', event.target.value)} aria-invalid={!!errors.confirmPassword} /><button type="button" onClick={() => setShowConfirmPassword(value => !value)} aria-label={showConfirmPassword ? 'Hide password' : 'Show password'}>{showConfirmPassword ? 'Hide' : 'Show'}</button></span>{errors.confirmPassword && <small>{errors.confirmPassword}</small>}</label>
-            </> : <>
-              <label>Email or mobile number *<input autoComplete="username" placeholder="you@example.com or 9876543210" value={form.identifier} onChange={event => update('identifier', event.target.value)} aria-invalid={!!errors.identifier} />{errors.identifier && <small>{errors.identifier}</small>}</label>
-              <label>Password *<span className="patient-password"><input autoComplete="current-password" type={showPassword ? 'text' : 'password'} placeholder="Your password" value={form.password} onChange={event => update('password', event.target.value)} aria-invalid={!!errors.password} /><button type="button" onClick={() => setShowPassword(value => !value)} aria-label={showPassword ? 'Hide password' : 'Show password'}>{showPassword ? 'Hide' : 'Show'}</button></span>{errors.password && <small>{errors.password}</small>}</label>
-            </>}
+            <label>Full name<input autoComplete="name" value={form.name} onChange={event => update('name', event.target.value)} />{errors.name && <small>{errors.name}</small>}</label>
+            <label>Mobile number<input autoComplete="tel" type="tel" placeholder="9876543210" value={form.phone} onChange={event => update('phone', event.target.value)} />{errors.phone && <small>{errors.phone}</small>}</label>
             {errors.form && <p className="patient-form__error" role="alert">{errors.form}</p>}
-            <button className="patient-form__submit" disabled={submitting}>{submitting ? 'Signing you in...' : mode === 'login' ? 'Login' : 'Create Account'}</button>
+            <button className="patient-form__submit" disabled={submitting}>{submitting ? 'Please wait...' : 'Continue'}</button>
           </form>
-          <p className="patient-auth-footer">{mode === 'login' ? 'New to Arogyabodhini?' : 'Already have an account?'} <button onClick={() => switchMode(mode === 'login' ? 'register' : 'login')}>{mode === 'login' ? 'Create Account' : 'Login'}</button></p>
         </section>
       </div>
     )
@@ -560,19 +546,50 @@ const PatientAccount = ({ onClose, onAuthenticated, initialMode = 'login', initi
         <button className="patient-modal__close" onClick={onClose} aria-label="Close">&times;</button>
         <div className="patient-account__top"><div><p className="patient-account__eyebrow">Patient account</p><h2>Hi, {patient.name.split(/\s+/)[0]}</h2></div><span className="patient-account__id">{patient.patientId}</span></div>
         <nav className="patient-account__tabs">
-          <button className={view === 'profile' ? 'active' : ''} onClick={() => setView('profile')}>My Profile</button>
-          <button className={view === 'consultations' ? 'active' : ''} onClick={() => showHistory('consultations')}>My Consultations</button>
+          <button className={view === 'profile' ? 'active' : ''} onClick={() => setView('profile')}>My Details</button>
           <button className={view === 'prescriptions' ? 'active' : ''} onClick={() => showHistory('prescriptions')}>My Prescriptions</button>
-          <button className={view === 'documents' ? 'active' : ''} onClick={() => showHistory('documents')}>Medical Records</button>
+          <button className={view === 'documents' ? 'active' : ''} onClick={() => showHistory('documents')}>My Reports</button>
         </nav>
         {errors.form && <p className="patient-form__error" role="alert">{errors.form}</p>}
-        {view === 'profile' ? <div className="patient-profile-grid">{[['Name', patient.name], ['Age', patient.age || 'Not provided'], ['Gender', patient.gender || 'Not provided'], ['Mobile', patient.phone], ['Email', patient.email || 'Not provided']].map(([label, value]) => <div key={label}><span>{label}</span><strong>{value}</strong></div>)}</div> : (
+        {view === 'profile' ? (
+          <div>
+            <div className="patient-profile-grid">{[
+              ['Name', patient.name],
+              ['Mobile', patient.phone],
+              ['Email', patient.email || 'Not provided'],
+              ['Preferred Language', patient.preferredLanguage || 'Not set'],
+              ['Age', patient.age || 'Not provided'],
+              ['Gender', patient.gender || 'Not provided'],
+            ].map(([label, value]) => <div key={label}><span>{label}</span><strong>{value}</strong></div>)}</div>
+            <form onSubmit={async (e) => {
+              e.preventDefault()
+              setSubmitting(true)
+              try {
+                await updateProfile({ email: emailDraft || patient.email })
+                setEmailDraft('')
+              } catch (err) {
+                setErrors({ form: err.message || 'Unable to save email.' })
+              } finally {
+                setSubmitting(false)
+              }
+            }} className="patient-form" style={{ marginTop: '16px' }}>
+              <label>Email for prescriptions
+                <input type="email" autoComplete="email" value={emailDraft} onChange={(e) => setEmailDraft(e.target.value)} placeholder={patient.email || 'optional'} />
+              </label>
+              <button type="submit" className="patient-form__submit" disabled={submitting}>{submitting ? 'Saving...' : 'Save email'}</button>
+            </form>
+          </div>
+        ) : (
           <div className="patient-history">
             {view === 'documents' && (
-              <label className="patient-doc-upload">
-                <input type="file" onChange={handleUpload} accept="application/pdf,image/png,image/jpeg" disabled={uploading} />
-                {uploading ? 'Uploading...' : 'Click here to upload previous prescriptions or lab reports'}
-              </label>
+              <>
+                <label className="patient-doc-upload">
+                  <input type="file" onChange={handleUpload} accept="application/pdf,image/png,image/jpeg,.jpg,.jpeg,.png,.pdf" disabled={uploading} />
+                  {uploading ? 'Uploading...' : 'Upload Medical Report'}
+                </label>
+                <p style={{ fontSize: '0.85rem', color: '#64748b', margin: '0 0 8px' }}>PDF, JPG, JPEG, or PNG</p>
+                {uploadMessage && <p style={{ fontWeight: 800, color: '#15803d' }}>{uploadMessage}</p>}
+              </>
             )}
             {view === 'documents' ? (
               <div className="patient-docs-grid">

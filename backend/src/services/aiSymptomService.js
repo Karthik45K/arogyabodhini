@@ -1,5 +1,6 @@
 const { InferenceClient } = require('@huggingface/inference');
 const diseasePredictionService = require('./diseasePredictionService');
+const { toMajorSpecialty } = require('../config/majorSpecialties');
 
 // Priority ordered: fastest, most reliable free-tier models first
 const MODELS = [
@@ -10,16 +11,23 @@ const MODELS = [
 ];
 
 const SYSTEM_PROMPT = `You are an emergency clinical triage assistant.
-Analyze the patient symptoms and output ONLY a valid JSON object matching the exact schema below. 
+Analyze the FULL patient symptom pattern (not just the last symptom) and output ONLY a valid JSON object matching the exact schema below.
 No markdown formatting, no code fences, no extra text — ONLY the raw JSON object.
+
+Do NOT invent rare diseases from vague/generic symptoms.
+Do NOT present findings as a definitive diagnosis — condition is a possible condition only.
+If symptoms are vague or insufficient for reliable specialist routing, use "General Physician".
+
+recommendedSpecialty MUST be exactly one of these major specialties:
+General Physician, Cardiology, Neurology, Pulmonology, Gastroenterology, Dermatology, Orthopedics, ENT, Ophthalmology, Pediatrics, Obstetrics & Gynecology, Urology, Nephrology, Endocrinology, Rheumatology, Psychiatry, General Surgery, Oncology, Infectious Disease.
 
 Schema:
 {
-  "condition": "Condition Name",
+  "condition": "Possible Condition Name",
   "severity": "Mild" | "Moderate" | "Emergency",
   "confidence": 0.88,
-  "recommendedSpecialty": "Specialty Name",
-  "summary": "Brief clinical summary",
+  "recommendedSpecialty": "Specialty Name from the list above",
+  "summary": "Brief clinical summary — not a diagnosis",
   "triageAdvice": "Actionable advice for the patient",
   "emergencyWarning": false,
   "precautions": ["precaution1", "precaution2"]
@@ -83,6 +91,8 @@ const analyzeSymptoms = async (symptoms) => {
       console.log(`\n\x1b[36m[AI Triage]\x1b[0m Attempting ${label}: ${name}`);
       const result = await callHuggingFace(client, name, symptoms, timeoutMs);
       const elapsed = Date.now() - startTime;
+      const major = toMajorSpecialty(result.recommendedSpecialty || 'General Physician');
+      result.recommendedSpecialty = major.label;
       console.log(`\x1b[32m[AI Triage] ✓ ${label} succeeded in ${elapsed}ms\x1b[0m — Condition: "${result.condition}", Specialty: "${result.recommendedSpecialty}", Severity: ${result.severity}`);
       return result;
     } catch (error) {
@@ -103,11 +113,12 @@ function localFallback(symptoms) {
   const severityLabel = localResult.severity?.label || (typeof localResult.severity === 'string' ? localResult.severity : 'Moderate');
   const confidenceRatio = localResult.confidence ? (localResult.confidence > 1 ? localResult.confidence / 100 : localResult.confidence) : 0.75;
   
+  const major = toMajorSpecialty(localResult.action?.specialist || 'General Physician');
   return {
     condition: topDisease,
     severity: severityLabel,
     confidence: confidenceRatio,
-    recommendedSpecialty: localResult.action?.specialist || 'General Physician',
+    recommendedSpecialty: major.label,
     summary: "Notice: Generated using approximate clinical rule-engine.",
     triageAdvice: localResult.urgencyNote || "Please consult a doctor for a proper diagnosis.",
     emergencyWarning: !!localResult.emergencyFlag,

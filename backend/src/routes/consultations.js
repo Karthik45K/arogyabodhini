@@ -1,14 +1,17 @@
 const express = require('express')
 const Consultation = require('../models/Consultation')
 const Doctor = require('../models/Doctor')
-const { getCanonicalDoctorId } = require('../config/doctorIdentity')
 const router = express.Router()
 
 const { loadPatient, requirePatient } = require('../middleware/patientAuth')
 const { loadDoctor, requireDoctor } = require('../middleware/doctorAuth')
 
 const Prescription = require('../models/Prescription')
-const { sendPrescriptionEmail } = require('../services/emailService')
+const { sendPrescriptionEmail, isSmtpConfigured, isEmailConfigured } = require('../services/emailService')
+const { sendPrescriptionSMS } = require('../services/smsService')
+const { sendPrescriptionWhatsApp, isWhatsAppConfigured, ensureAccessToken } = require('../services/twilioDeliveryService')
+const { buildPrescriptionPdfBuffer } = require('../services/prescriptionPdfService')
+const { signPrescription, verifyPrescription } = require('../services/prescriptionSigner')
 const crypto = require('crypto')
 
 const requireConsultationViewer = async (req, res, next) => {
@@ -39,6 +42,99 @@ const requireDoctorMutation = async (req, res, next) => {
 function uuid() {
   return `cons-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`
 }
+
+const { matchAndCreateConsultation } = require('../services/doctorMatchingService')
+const { toMajorSpecialty } = require('../config/majorSpecialties')
+
+/**
+ * POST /api/consultations/match
+ * Backend-authoritative fair specialty match + single-doctor assignment.
+ * Does not switch specialty when no doctor is available.
+ */
+router.post('/consultations/match', requirePatient, async (req, res, next) => {
+  try {
+    const {
+      specialty,
+      patientAge,
+      patientGender,
+      patientLang,
+      patientSymptoms,
+      symptoms,
+      aiResult,
+      slot,
+      consultationType,
+      patientEmail: bodyEmail,
+    } = req.body
+
+    const specialtyInput =
+      specialty ||
+      aiResult?.recommendedSpecialist ||
+      aiResult?.recommendedSpecialty ||
+      ''
+
+    if (!specialtyInput || !String(specialtyInput).trim()) {
+      return res.status(400).json({
+        success: false,
+        message: 'specialty (recommended specialist) is required.',
+      })
+    }
+
+    const major = toMajorSpecialty(specialtyInput)
+
+    let resolvedEmail = bodyEmail || req.patient?.email || ''
+    if (!resolvedEmail && req.patient?.patientId) {
+      const Patient = require('../models/Patient')
+      const patDoc = await Patient.findOne({ patientId: req.patient.patientId }).lean()
+      if (patDoc?.email) resolvedEmail = patDoc.email
+    }
+
+    const result = await matchAndCreateConsultation({
+      specialty: major.canonical,
+      patient: req.patient,
+      patientAge,
+      patientGender,
+      patientLang,
+      patientSymptoms,
+      symptoms,
+      aiResult: aiResult
+        ? {
+            ...aiResult,
+            recommendedSpecialist: major.label,
+            recommendedSpecialty: major.label,
+          }
+        : { recommendedSpecialist: major.label },
+      slot,
+      consultationType: consultationType || 'video',
+      patientEmail: resolvedEmail,
+    })
+
+    if (!result.matched) {
+      return res.status(200).json({
+        success: true,
+        matched: false,
+        matchStatus: result.matchStatus || 'SEARCHING',
+        specialtyCanonical: result.specialtyCanonical,
+        specialtyLabel: result.specialtyLabel,
+        message: result.message,
+        consultation: null,
+        doctor: null,
+      })
+    }
+
+    return res.status(201).json({
+      success: true,
+      matched: true,
+      matchStatus: result.matchStatus || 'WAITING_FOR_DOCTOR',
+      specialtyCanonical: result.specialtyCanonical,
+      specialtyLabel: result.specialtyLabel,
+      message: result.message,
+      doctor: result.doctor,
+      consultation: result.consultation,
+    })
+  } catch (error) {
+    next(error)
+  }
+})
 
 router.post('/consultations', requirePatient, async (req, res, next) => {
   try {
@@ -73,10 +169,15 @@ router.post('/consultations', requirePatient, async (req, res, next) => {
     const id = uuid()
     const consultation = await Consultation.create({
       id, requestId: id, roomId: `consultation_${id}`, status: 'waiting', doctorId: canonicalDoctorId,
-      doctorName: doctorName || '', doctorSpecialty: doctorSpecialty || '', patientId: req.patient?.patientId || null, patientName,
-      patientAge: patientAge || '', patientGender: patientGender || '', patientLang: patientLang || 'English',
-      patientPhone: patientPhone || '', patientContact: patientContact || patientPhone || '',
-      patientEmail: resolvedEmail,
+      doctorName: doctorName || '', doctorSpecialty: doctorSpecialty || '',
+      patientId: req.patient.patientId,
+      patientName: req.patient.name || patientName,
+      patientAge: patientAge || req.patient.age || '',
+      patientGender: patientGender || req.patient.gender || '',
+      patientLang: patientLang || 'English',
+      patientPhone: req.patient.phone || patientPhone || '',
+      patientContact: req.patient.phone || patientContact || patientPhone || '',
+      patientEmail: resolvedEmail || req.patient.email || '',
       patientSymptoms: patientSymptoms || symptoms || '', symptoms: symptoms || patientSymptoms || '',
       aiResult: aiResult || null, slot: slot || '', consultationType: consultationType || 'in_person',
       createdAt: new Date(), notes: null, prescription: null,
@@ -106,6 +207,35 @@ router.get('/consultations/:id', requireConsultationViewer, async (req, res, nex
   } catch (error) { next(error) }
 })
 
+router.post('/consultations/:id/end-call', requireConsultationViewer, async (req, res, next) => {
+  try {
+    const consultation = await Consultation.findOne({ id: req.params.id })
+    if (!consultation) return res.status(404).json({ success: false, message: 'Consultation not found.' })
+    const ownsAsPatient = req.patient && consultation.patientId === req.patient.patientId
+    const doctorIds = req.doctor ? [req.doctor.id, req.doctor._id?.toString(), req.doctor.entry_id].filter(Boolean) : []
+    const ownsAsDoctor = doctorIds.includes(consultation.doctorId)
+    if (!ownsAsPatient && !ownsAsDoctor) {
+      return res.status(403).json({ success: false, message: 'You are not authorized to end this consultation.' })
+    }
+
+    const roleEndedBy = ownsAsDoctor && !ownsAsPatient
+      ? 'doctor'
+      : ownsAsPatient && !ownsAsDoctor
+        ? 'patient'
+        : (req.body.endedBy === 'patient' ? 'patient' : 'doctor')
+
+    if (consultation.callStatus === 'ended') {
+      return res.json({ success: true, alreadyEnded: true, consultation: consultation.toObject() })
+    }
+
+    consultation.callStatus = 'ended'
+    consultation.callEndedAt = new Date()
+    consultation.callEndedBy = roleEndedBy
+    await consultation.save()
+    res.json({ success: true, consultation: consultation.toObject() })
+  } catch (error) { next(error) }
+})
+
 router.patch('/consultations/:id', requireDoctorMutation, async (req, res, next) => {
   try {
     const consultation = await Consultation.findOne({ id: req.params.id })
@@ -117,67 +247,234 @@ router.patch('/consultations/:id', requireDoctorMutation, async (req, res, next)
 
     const { status, notes, prescription } = req.body
     if (status === 'accepted') {
+      // One active consultation per doctor — refuse if already in an accepted call
+      const doctorIdVariants = [consultation.doctorId, ...doctorIds].filter(Boolean)
+      const since = new Date(Date.now() - 45 * 60 * 1000)
+      const otherActive = await Consultation.countDocuments({
+        id: { $ne: consultation.id },
+        doctorId: { $in: [...new Set(doctorIdVariants)] },
+        status: 'accepted',
+        $or: [
+          { acceptedAt: { $gte: since } },
+          { createdAt: { $gte: since } },
+        ],
+      })
+      if (otherActive > 0) {
+        return res.status(409).json({
+          success: false,
+          message: 'Doctor is already handling an active consultation.',
+        })
+      }
       consultation.status = 'accepted'
+      consultation.matchStatus = 'ACCEPTED'
       consultation.acceptedAt = new Date()
     } else if (status === 'rejected') {
       consultation.status = 'rejected'
+      consultation.matchStatus = 'REJECTED'
     } else if (status === 'completed' || notes || prescription) {
       if (notes) consultation.notes = notes
       consultation.status = 'completed'
+      consultation.matchStatus = 'COMPLETED'
       consultation.completedAt = new Date()
     }
     
     if (prescription) {
-      consultation.prescription = prescription
-      
-      // Save standalone Prescription document
-      const digitalSignatureHash = crypto.createHash('sha256')
-        .update(`${consultation.id}-${req.doctor.id}-${Date.now()}`)
-        .digest('hex');
+      if (!req.doctor) {
+        return res.status(403).json({ success: false, message: 'Only an authenticated doctor can issue a prescription.' })
+      }
 
-      // Resolve patient email reliably
+      const prescriptionId = `rx-${crypto.randomUUID()}`
+      const issuedAt = new Date().toISOString()
+      const doctorLicense = req.doctor.registrationNumber || req.doctor.licenseNumber || req.doctor.regNo || `DEMO-REG-${String(req.doctor.id || '').slice(-8)}`
+      const licenseIsDemo = !(req.doctor.registrationNumber || req.doctor.licenseNumber)
+
       let recipientEmail = consultation.patientEmail
-      if (!recipientEmail && consultation.patientId) {
+      let recipientPhone = consultation.patientPhone || consultation.patientContact || ''
+      if (consultation.patientId) {
         const Patient = require('../models/Patient')
         const patDoc = await Patient.findOne({ patientId: consultation.patientId }).lean()
-        if (patDoc?.email) recipientEmail = patDoc.email
-      }
-      if (!recipientEmail && consultation.patientContact?.includes('@')) {
-        recipientEmail = consultation.patientContact
-      }
-      if (!recipientEmail || !recipientEmail.includes('@')) {
-        recipientEmail = process.env.EMAIL_USER || 'karthikkaru9628@gmail.com'
+        if (patDoc?.email && !recipientEmail) recipientEmail = patDoc.email
+        if (patDoc?.phone && !recipientPhone) recipientPhone = patDoc.phone
       }
 
-      const rxDoc = new Prescription({
-        consultationId: consultation.id || consultation._id.toString(),
-        doctorId: consultation.doctorId,
-        doctorName: req.doctor.name || consultation.doctorName,
-        doctorSpecialty: req.doctor.spec || consultation.doctorSpecialty,
-        doctorRegNo: req.doctor.regNo || 'MCI-VERIFIED',
+      const medicines = prescription.medicines || []
+      const signedFields = {
+        prescriptionId,
+        consultationId: consultation.id,
         patientId: consultation.patientId || '',
         patientName: consultation.patientName,
-        patientEmail: recipientEmail,
-        patientAge: parseInt(consultation.patientAge) || 0,
-        patientGender: consultation.patientGender || '',
+        patientPhone: recipientPhone,
+        doctorId: consultation.doctorId,
+        doctorName: req.doctor.name || consultation.doctorName,
+        doctorLicense,
         diagnosis: prescription.diagnosis || notes?.diagnosis || 'General Checkup',
-        symptomsReported: [consultation.symptoms || consultation.patientSymptoms],
-        medicines: prescription.medicines || [],
+        medicines,
+        issuedAt,
+      }
+      const signed = signPrescription(signedFields)
+      const signatureOk = verifyPrescription(signed.payload, signed.signature, signed.algorithm)
+
+      const rxDoc = new Prescription({
+        prescriptionId,
+        consultationId: consultation.id,
+        doctorId: consultation.doctorId,
+        doctorName: req.doctor.name || consultation.doctorName,
+        doctorSpecialty: req.doctor.specialty || req.doctor.spec || consultation.doctorSpecialty,
+        doctorRegNo: doctorLicense,
+        doctorLicenseIsDemo: licenseIsDemo,
+        patientId: consultation.patientId || '',
+        patientName: consultation.patientName,
+        patientPhone: recipientPhone,
+        patientEmail: recipientEmail || '',
+        patientAge: parseInt(consultation.patientAge, 10) || 0,
+        patientGender: consultation.patientGender || '',
+        diagnosis: signedFields.diagnosis,
+        symptomsReported: [consultation.symptoms || consultation.patientSymptoms].filter(Boolean),
+        medicines,
         clinicalAdvice: prescription.advice || notes?.advice || '',
         followUpDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
-        digitalSignatureHash
-      });
-      await rxDoc.save();
+        digitalSignatureHash: signed.keyId,
+        signatureAlgorithm: signed.algorithm,
+        signature: signed.signature,
+        signedPayload: signed.payload,
+        signingKeyId: signed.keyId,
+        signatureStatus: signatureOk ? 'cryptographically_signed' : 'signature_failed',
+        prescribedAt: issuedAt,
+      })
 
-      // Trigger Email
-      console.log(`[consultations] Dispatching prescription email to: ${recipientEmail}`)
-      await sendPrescriptionEmail(rxDoc);
+      // Create ONE canonical prescription first — delivery is opt-in via channels / separate send.
+      const channels = prescription.deliveryChannels || req.body.deliveryChannels || null
+      let emailDelivery = { configured: isEmailConfigured(), sent: false, reason: 'not_requested', channel: 'email' }
+      let smsDelivery = { configured: false, sent: false, reason: 'not_requested', channel: 'sms' }
+      let whatsappDelivery = { configured: isWhatsAppConfigured(), sent: false, reason: 'not_requested', channel: 'whatsapp' }
+
+      ensureAccessToken(rxDoc)
+
+      if (channels) {
+        if (channels.email) emailDelivery = await sendPrescriptionEmail(rxDoc)
+        if (channels.whatsapp) whatsappDelivery = await sendPrescriptionWhatsApp(recipientPhone, rxDoc)
+        if (channels.sms) smsDelivery = await sendPrescriptionSMS(recipientPhone, rxDoc)
+      }
+
+      rxDoc.emailDelivery = emailDelivery
+      rxDoc.smsDelivery = smsDelivery
+      rxDoc.whatsappDelivery = whatsappDelivery
+      await rxDoc.save()
+
+      consultation.prescription = {
+        prescriptionId,
+        diagnosis: signedFields.diagnosis,
+        medicines,
+        advice: prescription.advice || notes?.advice || '',
+        followUp: prescription.followUp || notes?.followUp || 'As needed',
+        instructions: prescription.instructions || '',
+        signature: signed.signature,
+        signingKeyId: signed.keyId,
+        signatureAlgorithm: signed.algorithm,
+        signatureStatus: rxDoc.signatureStatus,
+        issuedAt,
+        doctorName: rxDoc.doctorName,
+        doctorId: consultation.doctorId,
+        doctorRegNo: doctorLicense,
+        doctorLicenseIsDemo: licenseIsDemo,
+        patientId: consultation.patientId,
+        patientName: consultation.patientName,
+        patientPhone: recipientPhone,
+        emailDelivery,
+        smsDelivery,
+        whatsappDelivery,
+      }
     }
 
     await consultation.save()
     console.log(`[consultations] Updated ${req.params.id} -> status=${consultation.status}`)
     res.json({ success: true, consultation: consultation.toObject() })
   } catch (error) { next(error) }
+})
+
+/**
+ * POST /api/consultations/:id/deliver-prescription
+ * Deliver the canonical signed prescription via selected channels.
+ */
+router.post('/consultations/:id/deliver-prescription', requireDoctorMutation, async (req, res, next) => {
+  try {
+    const consultation = await Consultation.findOne({ id: req.params.id })
+    if (!consultation) return res.status(404).json({ success: false, message: 'Consultation not found.' })
+    const doctorIds = [req.doctor.id, req.doctor._id?.toString(), req.doctor.entry_id].filter(Boolean)
+    if (!doctorIds.includes(consultation.doctorId)) {
+      return res.status(403).json({ success: false, message: 'You are not authorized to deliver this prescription.' })
+    }
+
+    const rxId = consultation.prescription?.prescriptionId
+    if (!rxId) {
+      return res.status(400).json({ success: false, message: 'Save and sign the prescription before sending.' })
+    }
+
+    const rxDoc = await Prescription.findOne({ prescriptionId: rxId })
+    if (!rxDoc) return res.status(404).json({ success: false, message: 'Prescription record not found.' })
+
+    const channels = req.body.channels || {}
+    const wantEmail = channels.email === true
+    const wantWhatsApp = channels.whatsapp === true
+    const wantSms = channels.sms === true
+    if (!wantEmail && !wantWhatsApp && !wantSms) {
+      return res.status(400).json({ success: false, message: 'Select at least one delivery channel.' })
+    }
+
+    if (consultation.patientId) {
+      const Patient = require('../models/Patient')
+      const pat = await Patient.findOne({ patientId: consultation.patientId }).lean()
+      if (pat?.email) rxDoc.patientEmail = pat.email
+      if (pat?.phone) rxDoc.patientPhone = pat.phone
+    }
+
+    ensureAccessToken(rxDoc)
+
+    const results = {
+      email: { configured: isEmailConfigured(), sent: false, reason: 'not_requested', channel: 'email' },
+      whatsapp: { configured: isWhatsAppConfigured(), sent: false, reason: 'not_requested', channel: 'whatsapp' },
+      sms: { configured: false, sent: false, reason: 'not_requested', channel: 'sms' },
+    }
+
+    if (wantEmail) results.email = await sendPrescriptionEmail(rxDoc)
+    if (wantWhatsApp) results.whatsapp = await sendPrescriptionWhatsApp(rxDoc.patientPhone, rxDoc)
+    if (wantSms) results.sms = await sendPrescriptionSMS(rxDoc.patientPhone, rxDoc)
+
+    rxDoc.emailDelivery = results.email
+    rxDoc.whatsappDelivery = results.whatsapp
+    rxDoc.smsDelivery = results.sms
+    await rxDoc.save()
+
+    consultation.prescription = {
+      ...(consultation.prescription.toObject?.() || consultation.prescription),
+      emailDelivery: results.email,
+      whatsappDelivery: results.whatsapp,
+      smsDelivery: results.sms,
+    }
+    await consultation.save()
+
+    res.json({
+      success: true,
+      delivery: results,
+      consultation: consultation.toObject(),
+    })
+  } catch (error) {
+    next(error)
+  }
+})
+
+/** Public secure PDF access for SMS links */
+router.get('/prescriptions/access/:token/pdf', async (req, res, next) => {
+  try {
+    const rx = await Prescription.findOne({ accessToken: req.params.token }).lean()
+    if (!rx) return res.status(404).json({ success: false, message: 'Prescription not found.' })
+    const buf = await buildPrescriptionPdfBuffer(rx)
+    res.setHeader('Content-Type', 'application/pdf')
+    res.setHeader('Content-Disposition', `inline; filename="prescription-${rx.prescriptionId}.pdf"`)
+    res.send(buf)
+  } catch (error) {
+    next(error)
+  }
 })
 
 router.post('/consultations/seed', requireDoctor, async (req, res, next) => {
@@ -203,7 +500,7 @@ router.post('/consultations/seed', requireDoctor, async (req, res, next) => {
   } catch (error) { next(error) }
 })
 
-router.delete('/consultations', async (_req, res, next) => {
+router.delete('/consultations', requireDoctor, async (_req, res, next) => {
   try {
     await Consultation.deleteMany({})
     res.json({ success: true, message: 'All consultations cleared.' })

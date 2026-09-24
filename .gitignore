@@ -34,6 +34,9 @@ server/debug-output/
 .env.*
 !.env.example
 
+# Signing keys (never commit)
+backend/keys/
+
 # Dependencies
 node_modules/
 

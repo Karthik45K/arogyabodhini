@@ -61,7 +61,10 @@ function AdminDashboard({ token, setToken }) {
   const [activeTab, setActiveTab] = useState('overview'); // 'overview' | 'provisioning' | 'analytics'
   const [stats, setStats] = useState(null);
   const [applications, setApplications] = useState([]);
+  const [doctors, setDoctors] = useState([]);
   const [selectedApp, setSelectedApp] = useState(null);
+  const [doctorToDelete, setDoctorToDelete] = useState(null);
+  const [isDeletingDoctor, setIsDeletingDoctor] = useState(false);
   const [isRejectModalOpen, setIsRejectModalOpen] = useState(false);
   const [rejectReason, setRejectReason] = useState('');
   const [search, setSearch] = useState('');
@@ -73,13 +76,16 @@ function AdminDashboard({ token, setToken }) {
   const fetchData = async () => {
     try {
       const headers = { Authorization: `Bearer ${token}` };
-      const [statsRes, appsRes] = await Promise.all([
+      const [statsRes, appsRes, doctorsRes] = await Promise.all([
         api.get('/admin/dashboard', { headers }),
-        api.get('/admin/doctor-applications', { headers })
+        api.get('/admin/doctor-applications', { headers }),
+        api.get('/admin/doctors', { headers }),
       ]);
       setStats(statsRes.data);
       const rawApps = Array.isArray(appsRes.data) ? appsRes.data : (appsRes.data.applications || []);
       setApplications(rawApps);
+      const rawDoctors = Array.isArray(doctorsRes.data?.doctors) ? doctorsRes.data.doctors : [];
+      setDoctors(rawDoctors);
     } catch (err) {
       if (err.response?.status === 401) {
         localStorage.removeItem('admin_token');
@@ -151,6 +157,33 @@ function AdminDashboard({ token, setToken }) {
       alert("Error resending email: " + (err.response?.data?.message || err.message));
     } finally {
       setIsProcessing(false);
+    }
+  };
+
+  const confirmDeleteDoctor = async () => {
+    if (!doctorToDelete) return;
+    const id = doctorToDelete.doctorId || doctorToDelete._id;
+    if (!id) return;
+    setIsDeletingDoctor(true);
+    try {
+      await api.delete(`/admin/doctors/${id}`, { headers: { Authorization: `Bearer ${token}` } });
+      setDoctors((prev) => prev.filter((d) => String(d.doctorId || d._id) !== String(id)));
+      setDoctorToDelete(null);
+      setActionFeedback({ type: 'success', message: 'Doctor deleted successfully.' });
+      setTimeout(() => setActionFeedback(null), 5000);
+      try {
+        const statsRes = await api.get('/admin/dashboard', { headers: { Authorization: `Bearer ${token}` } });
+        setStats(statsRes.data);
+      } catch { /* ignore */ }
+    } catch (err) {
+      setActionFeedback({
+        type: 'error',
+        message: err.response?.data?.message || 'Failed to delete doctor.',
+      });
+      setTimeout(() => setActionFeedback(null), 6000);
+      setDoctorToDelete(null);
+    } finally {
+      setIsDeletingDoctor(false);
     }
   };
 
@@ -315,8 +348,8 @@ function AdminDashboard({ token, setToken }) {
           {/* Action Feedback Banner */}
           {actionFeedback && (
             <div style={{
-              background: actionFeedback.type === 'success' ? '#dcfce7' : '#e0f2fe',
-              color: actionFeedback.type === 'success' ? '#166534' : '#0369a1',
+              background: actionFeedback.type === 'success' ? '#dcfce7' : actionFeedback.type === 'error' ? '#fee2e2' : '#e0f2fe',
+              color: actionFeedback.type === 'success' ? '#166534' : actionFeedback.type === 'error' ? '#b91c1c' : '#0369a1',
               padding: '14px 20px',
               borderRadius: '8px',
               marginBottom: '24px',
@@ -486,6 +519,71 @@ function AdminDashboard({ token, setToken }) {
                     ))}
                     {applications.length === 0 && (
                       <tr><td colSpan="6" style={{ textAlign: 'center', padding: '40px', color: '#64748b' }}>No doctor applications submitted yet.</td></tr>
+                    )}
+                  </tbody>
+                </table>
+              </div>
+
+              {/* Registered Doctors — Delete Doctor */}
+              <div className="admin-queue-header" style={{ marginTop: 36 }}>
+                <h3 style={{ color: '#0f172a', fontSize: '1.2rem', margin: 0, fontWeight: 700 }}>
+                  Registered Doctors
+                </h3>
+                <span style={{ color: '#64748b', fontSize: '0.9rem', fontWeight: 600 }}>
+                  {doctors.length} active
+                </span>
+              </div>
+
+              <div className="admin-table-container">
+                <table className="admin-table">
+                  <thead>
+                    <tr>
+                      <th>Doctor Name</th>
+                      <th>Specialty</th>
+                      <th>Email</th>
+                      <th>Status</th>
+                      <th>Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {doctors.map((doc) => (
+                      <tr key={doc.doctorId || doc._id}>
+                        <td>
+                          <strong style={{ color: '#0f172a' }}>{doc.name || '—'}</strong>
+                        </td>
+                        <td>{doc.specialty || '—'}</td>
+                        <td style={{ color: '#64748b', fontSize: '0.85rem' }}>{doc.email || '—'}</td>
+                        <td>
+                          <span className={`admin-badge ${doc.isActive ? 'approved' : 'pending'}`}>
+                            {doc.isActive ? 'Active' : (doc.availabilityStatus || 'Registered')}
+                          </span>
+                        </td>
+                        <td>
+                          <button
+                            type="button"
+                            onClick={() => setDoctorToDelete(doc)}
+                            style={{
+                              padding: '8px 14px',
+                              background: '#fef2f2',
+                              color: '#b91c1c',
+                              border: '1px solid #fecaca',
+                              borderRadius: '6px',
+                              fontWeight: 700,
+                              fontSize: '0.85rem',
+                              cursor: 'pointer',
+                            }}
+                          >
+                            Delete Doctor
+                          </button>
+                        </td>
+                      </tr>
+                    ))}
+                    {doctors.length === 0 && (
+                      <tr>
+                        <td colSpan="5" style={{ textAlign: 'center', padding: '40px', color: '#64748b' }}>
+                          No registered doctors yet.
+                        </td>
+                      </tr>
                     )}
                   </tbody>
                 </table>
@@ -847,6 +945,40 @@ function AdminDashboard({ token, setToken }) {
           onBlur={e => e.currentTarget.style.borderColor = '#cbd5e1'}
           placeholder="e.g. Medical registration number could not be verified in the national council registry..."
         />
+      </Modal>
+
+      {/* Delete Doctor Confirmation */}
+      <Modal
+        isOpen={!!doctorToDelete}
+        onClose={() => !isDeletingDoctor && setDoctorToDelete(null)}
+        title="Delete Doctor?"
+        actions={
+          <>
+            <button
+              type="button"
+              disabled={isDeletingDoctor}
+              onClick={() => setDoctorToDelete(null)}
+              style={{ padding: '12px 24px', background: '#f1f5f9', color: '#475569', border: 'none', borderRadius: '8px', fontWeight: 600, cursor: 'pointer' }}
+            >
+              Cancel
+            </button>
+            <button
+              type="button"
+              disabled={isDeletingDoctor}
+              onClick={confirmDeleteDoctor}
+              style={{ padding: '12px 24px', background: '#dc2626', color: 'white', border: 'none', borderRadius: '8px', fontWeight: 600, cursor: 'pointer' }}
+            >
+              {isDeletingDoctor ? 'Deleting…' : 'Delete Doctor'}
+            </button>
+          </>
+        }
+      >
+        <p style={{ margin: 0, color: '#334155', fontWeight: 500, fontSize: '1.05rem' }}>
+          Are you sure you want to permanently remove Dr. {doctorToDelete?.name || 'this doctor'}?
+        </p>
+        <p style={{ margin: '12px 0 0', color: '#64748b', fontSize: '0.9rem' }}>
+          Consultation history, prescriptions, and patient records will not be deleted.
+        </p>
       </Modal>
     </div>
   );

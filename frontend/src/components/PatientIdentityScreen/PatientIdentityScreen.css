@@ -1,0 +1,195 @@
+.pis-root {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 24px 20px 80px;
+  background: #f8fafc;
+  text-align: center;
+}
+
+.pis-brand {
+  margin: 0;
+  font-size: clamp(1.5rem, 5vw, 2.1rem);
+  font-weight: 900;
+  letter-spacing: 0.06em;
+  color: #0d47a1;
+}
+
+.pis-title {
+  margin: 18px 0 6px;
+  font-size: 1.5rem;
+  font-weight: 800;
+  color: #0f172a;
+}
+
+.pis-sub {
+  margin: 0 0 24px;
+  font-size: 1.05rem;
+  color: #334155;
+  max-width: 420px;
+  line-height: 1.45;
+}
+
+.pis-mode-row {
+  display: flex;
+  gap: 16px;
+  flex-wrap: wrap;
+  justify-content: center;
+  width: 100%;
+  max-width: 480px;
+}
+
+.pis-mode-btn {
+  flex: 1 1 180px;
+  min-height: 120px;
+  border: 3px solid #1565c0;
+  border-radius: 18px;
+  background: #ffffff;
+  color: #0d47a1;
+  font-size: 1.45rem;
+  font-weight: 900;
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
+.pis-mode-icon {
+  font-size: 2.2rem;
+}
+
+.pis-voice-card,
+.pis-confirm-card {
+  width: 100%;
+  max-width: 440px;
+  background: #ffffff;
+  border: 2px solid #e2e8f0;
+  border-radius: 16px;
+  padding: 20px 18px;
+  text-align: center;
+}
+
+.pis-prompt {
+  margin: 0 0 10px;
+  font-size: 1.35rem;
+  font-weight: 800;
+  color: #0f172a;
+}
+
+.pis-status {
+  margin: 0 0 8px;
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: #1565c0;
+}
+
+.pis-heard {
+  margin: 0 0 16px;
+  font-size: 1.25rem;
+  font-weight: 800;
+  color: #0f172a;
+  word-break: break-word;
+}
+
+.pis-voice-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  justify-content: center;
+}
+
+.pis-form {
+  width: 100%;
+  max-width: 420px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  text-align: left;
+}
+
+.pis-form label {
+  font-size: 1.1rem;
+  font-weight: 800;
+  color: #0f172a;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.pis-form input,
+.pis-form select {
+  min-height: 56px;
+  font-size: 1.2rem;
+  padding: 12px 14px;
+  border-radius: 12px;
+  border: 2px solid #334155;
+  background: #fff;
+}
+
+.pis-btn {
+  min-height: 56px;
+  border: none;
+  border-radius: 14px;
+  background: #1565c0;
+  color: #fff;
+  font-size: 1.2rem;
+  font-weight: 800;
+  cursor: pointer;
+  padding: 0 18px;
+}
+
+.pis-btn--secondary {
+  background: #e2e8f0;
+  color: #0f172a;
+}
+
+.pis-btn:disabled {
+  background: #94a3b8;
+}
+
+.pis-confirm-grid {
+  display: grid;
+  gap: 10px;
+  text-align: left;
+  margin: 12px 0 18px;
+}
+
+.pis-confirm-grid div {
+  background: #f1f5f9;
+  border-radius: 10px;
+  padding: 12px 14px;
+}
+
+.pis-confirm-grid span {
+  display: block;
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: #64748b;
+  text-transform: uppercase;
+}
+
+.pis-confirm-grid strong {
+  font-size: 1.15rem;
+  color: #0f172a;
+}
+
+.pis-linkish {
+  background: none;
+  border: none;
+  color: #1565c0;
+  font-weight: 700;
+  font-size: 0.95rem;
+  cursor: pointer;
+  text-decoration: underline;
+}
+
+.pis-error {
+  margin-top: 14px;
+  color: #b91c1c;
+  font-weight: 700;
+  max-width: 420px;
+}

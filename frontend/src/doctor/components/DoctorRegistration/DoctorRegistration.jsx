@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
 import '../../../styles/registration.css';
@@ -6,15 +6,50 @@ import { useToast } from '../../../components/Shared/Toast.jsx';
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000';
 
+const FALLBACK_SPECIALTIES = [
+  { value: 'general-physician', label: 'General Physician' },
+  { value: 'cardiologist', label: 'Cardiology' },
+  { value: 'neurologist', label: 'Neurology' },
+  { value: 'pulmonologist', label: 'Pulmonology' },
+  { value: 'gastroenterologist', label: 'Gastroenterology' },
+  { value: 'dermatologist', label: 'Dermatology' },
+  { value: 'orthopedist', label: 'Orthopedics' },
+  { value: 'ent-specialist', label: 'ENT' },
+  { value: 'ophthalmologist', label: 'Ophthalmology' },
+  { value: 'pediatrician', label: 'Pediatrics' },
+  { value: 'gynecologist', label: 'Obstetrics & Gynecology' },
+  { value: 'urologist', label: 'Urology' },
+  { value: 'nephrologist', label: 'Nephrology' },
+  { value: 'endocrinologist', label: 'Endocrinology' },
+  { value: 'rheumatologist', label: 'Rheumatology' },
+  { value: 'psychiatrist', label: 'Psychiatry' },
+  { value: 'general-surgeon', label: 'General Surgery' },
+  { value: 'oncologist', label: 'Oncology' },
+  { value: 'infectious-disease', label: 'Infectious Disease' },
+];
+
 export default function DoctorRegistration() {
   const [formData, setFormData] = useState({
     fullName: '', email: '', phone: '', password: '',
     specialty: '', experienceYears: '', clinicName: '',
     registrationNumber: '', address: '', consultationFee: ''
   });
+  const [specialties, setSpecialties] = useState(FALLBACK_SPECIALTIES);
   const [submitted, setSubmitted] = useState(false);
   const navigate = useNavigate();
   const { showToast } = useToast();
+
+  useEffect(() => {
+    let cancelled = false;
+    axios.get(`${API_BASE_URL}/api/doctors/specialties`)
+      .then((res) => {
+        if (cancelled) return;
+        const list = res.data?.specialties;
+        if (Array.isArray(list) && list.length) setSpecialties(list);
+      })
+      .catch(() => {});
+    return () => { cancelled = true; };
+  }, []);
 
   const handleChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
@@ -22,6 +57,10 @@ export default function DoctorRegistration() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    if (!formData.specialty) {
+      showToast('Please select a specialty.', 'error');
+      return;
+    }
     try {
       await axios.post(`${API_BASE_URL}/api/doctors/register`, formData);
       setSubmitted(true);
@@ -70,7 +109,18 @@ export default function DoctorRegistration() {
             </div>
             <div className="reg-form-group">
               <label>Specialty</label>
-              <input className="reg-input" type="text" name="specialty" placeholder="e.g. Cardiologist" onChange={handleChange} required />
+              <select
+                className="reg-input"
+                name="specialty"
+                value={formData.specialty}
+                onChange={handleChange}
+                required
+              >
+                <option value="">Select major specialty</option>
+                {specialties.map((s) => (
+                  <option key={s.value} value={s.value}>{s.label}</option>
+                ))}
+              </select>
             </div>
             <div className="reg-form-group">
               <label>Years of Experience</label>

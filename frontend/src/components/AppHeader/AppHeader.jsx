@@ -53,15 +53,6 @@ const AppHeader = ({ onChangeLang, onJoinVideoRoom, activeIncomingCall, onOpenAc
             </button>
           )}
 
-          <button
-            id="doctor-portal-nav-btn"
-            className="ab-header__doctor-btn"
-            onClick={() => navigate('/doctor')}
-            title="Open Doctor Portal"
-          >
-            <span className="ab-header__doctor-btn-full">Doctor Portal</span>
-            <span className="ab-header__doctor-btn-short">🩺 Doctor</span>
-          </button>
           <div className="ab-header__badge" aria-label={en('freeSecure')}>
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none"
               stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" aria-hidden="true">

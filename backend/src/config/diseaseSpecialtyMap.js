@@ -134,7 +134,48 @@ const SPECIALTY_MAPPING = {
   // Urology
   'urology': 'urologist',
   'urologist': 'urologist',
-  'nephrology': 'urologist',
+
+  // Nephrology
+  'nephrology': 'nephrologist',
+  'nephrologist': 'nephrologist',
+  'kidney': 'nephrologist',
+
+  // Pediatrics
+  'pediatrics': 'pediatrician',
+  'paediatrics': 'pediatrician',
+  'pediatrician': 'pediatrician',
+  'paediatrician': 'pediatrician',
+  'child': 'pediatrician',
+
+  // Obstetrics & Gynecology
+  'gynecology': 'gynecologist',
+  'gynaecology': 'gynecologist',
+  'gynecologist': 'gynecologist',
+  'gynaecologist': 'gynecologist',
+  'obstetrics': 'gynecologist',
+  'obstetrics-gynecology': 'gynecologist',
+  'obgyn': 'gynecologist',
+  'ob-gyn': 'gynecologist',
+
+  // Rheumatology
+  'rheumatology': 'rheumatologist',
+  'rheumatologist': 'rheumatologist',
+
+  // General Surgery
+  'general-surgery': 'general-surgeon',
+  'general-surgeon': 'general-surgeon',
+  'surgery': 'general-surgeon',
+  'surgeon': 'general-surgeon',
+
+  // Oncology
+  'oncology': 'oncologist',
+  'oncologist': 'oncologist',
+  'cancer': 'oncologist',
+
+  // Infectious Disease
+  'infectious-disease': 'infectious-disease',
+  'infectious-diseases': 'infectious-disease',
+  'infectiology': 'infectious-disease',
 
   // General Physician
   'general-physician': 'general-physician',

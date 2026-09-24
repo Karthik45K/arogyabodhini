@@ -69,3 +69,17 @@
 
 .analyzing-dots span:nth-child(2) { animation-delay: 0.2s; }
 .analyzing-dots span:nth-child(3) { animation-delay: 0.4s; }
+
+.analyzing-home-btn {
+  margin-top: 24px;
+  min-height: 52px;
+  min-width: 180px;
+  padding: 12px 20px;
+  border-radius: 12px;
+  border: 2px solid #cfd8dc;
+  background: #f5f5f5;
+  color: #37474f;
+  font-size: 1.05rem;
+  font-weight: 800;
+  cursor: pointer;
+}

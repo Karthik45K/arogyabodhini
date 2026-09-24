@@ -2,12 +2,28 @@ const express = require('express');
 const router = express.Router();
 const bcrypt = require('bcrypt');
 const DoctorApplication = require('../models/DoctorApplication');
+const { isAllowedMajorSpecialty, toMajorSpecialty, registrationOptions } = require('../config/majorSpecialties');
+
+/** Controlled major specialty list for doctor registration UI */
+router.get('/doctors/specialties', (_req, res) => {
+  res.json({ success: true, specialties: registrationOptions() });
+});
 
 // Doctor Registration
 router.post('/doctors/register', async (req, res) => {
   try {
     const { password, ...data } = req.body;
-    
+
+    if (!isAllowedMajorSpecialty(data.specialty)) {
+      return res.status(400).json({
+        message: 'Please select a valid major specialty from the list.',
+        specialties: registrationOptions(),
+      });
+    }
+
+    const major = toMajorSpecialty(data.specialty);
+    data.specialty = major.canonical;
+
     const existing = await DoctorApplication.findOne({ email: data.email });
     if (existing) {
       if (existing.status === 'rejected') {

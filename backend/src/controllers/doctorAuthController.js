@@ -12,7 +12,8 @@ const toDoctorProfile = (doctor) => ({
   id: getCanonicalDoctorId(doctor) || doctor.id || doctor._id.toString(),
   name: doctor.name || 'Doctor',
   spec: doctor.specialty || doctor.spec || 'General Physician',
-  regNo: doctor.entry_id ? `DB-${doctor.entry_id}` : `DB-${doctor._id.toString().slice(-8)}`,
+  regNo: doctor.registrationNumber || doctor.licenseNumber || doctor.regNo || `DEMO-REG-${(getCanonicalDoctorId(doctor) || doctor._id.toString()).slice(-8)}`,
+  licenseIsDemo: !(doctor.registrationNumber || doctor.licenseNumber),
   hospital: doctor.bangalore_location || doctor.location || '',
   initials: (doctor.name || 'Dr')
     .split(/\s+/)

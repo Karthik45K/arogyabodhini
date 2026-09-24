@@ -36,6 +36,22 @@ function isSmtpConfigured() {
   return true;
 }
 
+function isTwilioEmailConfigured() {
+  const sid = String(process.env.TWILIO_ACCOUNT_SID || '').trim()
+  const token = String(process.env.TWILIO_AUTH_TOKEN || '').trim()
+  const from = String(process.env.TWILIO_EMAIL_FROM || '').trim()
+  if (!sid || !token || !from) return false
+  if (sid.startsWith('your-') || token.startsWith('your-')) return false
+  return true
+}
+
+function isEmailConfigured() {
+  const provider = String(process.env.EMAIL_PROVIDER || '').trim().toLowerCase()
+  if (provider === 'twilio') return isTwilioEmailConfigured()
+  // Prefer Twilio Email if configured; otherwise SMTP
+  return isTwilioEmailConfigured() || isSmtpConfigured()
+}
+
 function getFromAddress() {
   if (process.env.EMAIL_FROM && !process.env.EMAIL_FROM.includes('no-reply@arogyabhodhini.com')) {
     return process.env.EMAIL_FROM;
@@ -44,50 +60,20 @@ function getFromAddress() {
   return `"Arogyabodhini Healthcare" <${user}>`;
 }
 
-const sendPrescriptionEmail = async (prescription) => {
-  if (!isSmtpConfigured()) {
-    console.log('[EmailService] SMTP not configured. Skipping prescription email dispatch to:', prescription.patientEmail);
-    return { skipped: true };
-  }
-
-  const medicinesHtml = prescription.medicines.map(med => `
-    <tr>
-      <td style="padding: 12px; border-bottom: 1px solid #e2e8f0;">${med.name}</td>
-      <td style="padding: 12px; border-bottom: 1px solid #e2e8f0;">${med.dosage}</td>
-      <td style="padding: 12px; border-bottom: 1px solid #e2e8f0;">${med.frequency}</td>
-      <td style="padding: 12px; border-bottom: 1px solid #e2e8f0;">${med.duration}</td>
-      <td style="padding: 12px; border-bottom: 1px solid #e2e8f0;">${med.instructions}</td>
-    </tr>
-  `).join('');
-
-  const mailOptions = {
-    from: getFromAddress(),
-    to: prescription.patientEmail,
-    subject: `Your Digital Prescription from Dr. ${prescription.doctorName}`,
-    html: `
+function buildPrescriptionHtml(prescription, medicinesHtml) {
+  return `
       <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; border: 1px solid #e2e8f0; border-radius: 8px; overflow: hidden;">
         <div style="background: #1565c0; color: white; padding: 20px; text-align: center;">
           <h1 style="margin: 0; font-size: 24px;">Arogyabodhini Healthcare</h1>
           <p style="margin: 5px 0 0; opacity: 0.9;">Verified Teleconsultation Prescription</p>
         </div>
         <div style="padding: 24px;">
-          <div style="display: flex; justify-content: space-between; border-bottom: 2px solid #1565c0; padding-bottom: 16px; margin-bottom: 24px;">
-            <div>
-              <h2 style="margin: 0; color: #0f172a; font-size: 18px;">Dr. ${prescription.doctorName}</h2>
-              <p style="margin: 4px 0 0; color: #64748b; font-size: 14px;">${prescription.doctorSpecialty}</p>
-              <p style="margin: 4px 0 0; color: #64748b; font-size: 14px;">Reg No: ${prescription.doctorRegNo}</p>
-            </div>
-            <div style="text-align: right;">
-              <p style="margin: 0; color: #64748b; font-size: 14px;">Date: ${new Date(prescription.prescribedAt).toLocaleDateString()}</p>
-              <p style="margin: 4px 0 0; color: #64748b; font-size: 14px;">Ref ID: ${prescription._id}</p>
-            </div>
+          <p>Dear ${prescription.patientName || 'Patient'},</p>
+          <p>Your signed prescription from <strong>Dr. ${prescription.doctorName}</strong> is attached as a PDF.</p>
+          <div style="background: #f8fafc; padding: 16px; border-radius: 6px; margin: 16px 0;">
+            <p style="margin: 0 0 8px;"><strong>Diagnosis:</strong> ${prescription.diagnosis}</p>
+            <p style="margin: 0;"><strong>Ref:</strong> ${prescription.prescriptionId || prescription._id}</p>
           </div>
-          
-          <div style="background: #f8fafc; padding: 16px; border-radius: 6px; margin-bottom: 24px;">
-            <p style="margin: 0 0 8px;"><strong>Patient:</strong> ${prescription.patientName} (${prescription.patientAge || '-'} yrs, ${prescription.patientGender || '-'})</p>
-            <p style="margin: 0;"><strong>Diagnosis:</strong> ${prescription.diagnosis}</p>
-          </div>
-
           <table style="width: 100%; border-collapse: collapse; margin-bottom: 24px; font-size: 14px;">
             <thead>
               <tr style="background: #f1f5f9; text-align: left;">
@@ -98,37 +84,153 @@ const sendPrescriptionEmail = async (prescription) => {
                 <th style="padding: 12px;">Instructions</th>
               </tr>
             </thead>
-            <tbody>
-              ${medicinesHtml}
-            </tbody>
+            <tbody>${medicinesHtml}</tbody>
           </table>
-
-          ${prescription.clinicalAdvice ? `
-            <div style="margin-bottom: 24px;">
-              <h3 style="margin: 0 0 8px; font-size: 16px; color: #0f172a;">Clinical Advice:</h3>
-              <p style="margin: 0; color: #475569;">${prescription.clinicalAdvice}</p>
-            </div>
-          ` : ''}
-
-          <div style="border-top: 1px solid #e2e8f0; padding-top: 24px; text-align: center;">
-            <div style="display: inline-block; padding: 12px 24px; background: #e0f2fe; color: #0369a1; border-radius: 4px; font-weight: 600; font-size: 14px;">
-              ✓ Digitally Signed & Certified under Indian Telemedicine Practice Guidelines 2020.
-            </div>
-            <p style="margin-top: 12px; font-size: 12px; color: #94a3b8;">Hash: ${prescription.digitalSignatureHash}</p>
-          </div>
+          <p style="font-size: 12px; color: #94a3b8;">Cryptographically signed prescription (not a government e-sign). Key: ${prescription.signingKeyId || prescription.digitalSignatureHash || ''}</p>
         </div>
       </div>
     `
+}
+
+async function sendViaTwilioEmail({ to, toName, subject, html, pdfAttachment }) {
+  const sid = process.env.TWILIO_ACCOUNT_SID
+  const token = process.env.TWILIO_AUTH_TOKEN
+  const fromAddress = process.env.TWILIO_EMAIL_FROM
+  const fromName = process.env.TWILIO_EMAIL_FROM_NAME || 'Arogyabodhini Healthcare'
+
+  const content = {
+    subject,
+    html,
+  }
+  if (pdfAttachment?.content) {
+    content.attachments = [{
+      filename: pdfAttachment.filename,
+      contentType: 'application/pdf',
+      content: Buffer.isBuffer(pdfAttachment.content)
+        ? pdfAttachment.content.toString('base64')
+        : String(pdfAttachment.content),
+    }]
+  }
+
+  const body = {
+    from: { address: fromAddress, name: fromName },
+    to: [{ address: to, name: toName || to }],
+    content,
+  }
+
+  const auth = Buffer.from(`${sid}:${token}`).toString('base64')
+  const res = await fetch('https://comms.twilio.com/v1/Emails', {
+    method: 'POST',
+    headers: {
+      Authorization: `Basic ${auth}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify(body),
+  })
+
+  const raw = await res.text()
+  let data = {}
+  try { data = JSON.parse(raw) } catch { data = { raw } }
+
+  if (!res.ok && res.status !== 202) {
+    const message = data.message || data.error || raw || `Twilio Email HTTP ${res.status}`
+    throw new Error(message)
+  }
+
+  return {
+    success: true,
+    sent: true,
+    configured: true,
+    channel: 'email',
+    provider: 'twilio_email',
+    messageId: data.operationId || data.id || null,
+    pdfAttached: Boolean(pdfAttachment),
+  }
+}
+
+const sendPrescriptionEmail = async (prescription) => {
+  const to = String(prescription.patientEmail || '').trim()
+  if (!to || !to.includes('@')) {
+    return { configured: isEmailConfigured(), sent: false, reason: 'no_email', channel: 'email' }
+  }
+  if (!isEmailConfigured()) {
+    console.log('[EmailService] Email not configured. Skipping prescription email dispatch to:', to)
+    return { configured: false, sent: false, skipped: true, reason: 'not_configured', channel: 'email' }
+  }
+
+  const medicinesHtml = (prescription.medicines || []).map(med => `
+    <tr>
+      <td style="padding: 12px; border-bottom: 1px solid #e2e8f0;">${med.name}</td>
+      <td style="padding: 12px; border-bottom: 1px solid #e2e8f0;">${med.dosage}</td>
+      <td style="padding: 12px; border-bottom: 1px solid #e2e8f0;">${med.frequency}</td>
+      <td style="padding: 12px; border-bottom: 1px solid #e2e8f0;">${med.duration}</td>
+      <td style="padding: 12px; border-bottom: 1px solid #e2e8f0;">${med.instructions || ''}</td>
+    </tr>
+  `).join('');
+
+  let pdfAttachment = null
+  try {
+    const { buildPrescriptionPdfBuffer } = require('./prescriptionPdfService')
+    const pdfBuf = await buildPrescriptionPdfBuffer(prescription)
+    pdfAttachment = {
+      filename: `prescription-${prescription.prescriptionId || 'rx'}.pdf`,
+      content: pdfBuf,
+      contentType: 'application/pdf',
+    }
+  } catch (pdfErr) {
+    console.error('[EmailService] PDF build failed:', pdfErr.message)
+  }
+
+  const html = buildPrescriptionHtml(prescription, medicinesHtml)
+  const subject = 'Your Arogyabodhini Prescription'
+  const provider = String(process.env.EMAIL_PROVIDER || '').trim().toLowerCase()
+  const useTwilio = provider === 'twilio' || (isTwilioEmailConfigured() && !isSmtpConfigured()) || (provider !== 'smtp' && isTwilioEmailConfigured())
+
+  if (useTwilio && isTwilioEmailConfigured()) {
+    try {
+      const result = await sendViaTwilioEmail({
+        to,
+        toName: prescription.patientName,
+        subject,
+        html,
+        pdfAttachment,
+      })
+      console.log(`[EmailService] Twilio Email accepted for ${to} (operationId: ${result.messageId})`)
+      return result
+    } catch (err) {
+      console.error(`[EmailService] Twilio Email failed for ${to}:`, err.message)
+      // Fall through to SMTP if available
+      if (!isSmtpConfigured()) {
+        return { success: false, sent: false, configured: true, channel: 'email', error: err.message, reason: 'provider_error', provider: 'twilio_email' }
+      }
+      console.log('[EmailService] Falling back to SMTP…')
+    }
+  }
+
+  const mailOptions = {
+    from: getFromAddress(),
+    to: prescription.patientEmail,
+    subject,
+    html,
+    attachments: pdfAttachment ? [pdfAttachment] : [],
   };
 
   try {
     const transporter = getTransporter();
     const info = await transporter.sendMail(mailOptions);
     console.log(`[EmailService] Prescription successfully sent to ${prescription.patientEmail} (MessageID: ${info.messageId})`);
-    return { success: true, messageId: info.messageId };
+    return {
+      success: true,
+      sent: true,
+      configured: true,
+      channel: 'email',
+      provider: 'smtp',
+      messageId: info.messageId,
+      pdfAttached: Boolean(pdfAttachment),
+    };
   } catch (err) {
     console.error(`[EmailService] Error sending prescription email to ${prescription.patientEmail}:`, err.message);
-    return { success: false, error: err.message };
+    return { success: false, sent: false, configured: true, channel: 'email', error: err.message, reason: 'provider_error' };
   }
 };
 
@@ -262,4 +364,11 @@ The Arogyabodhini Telemedicine Network
   }
 };
 
-module.exports = { sendPrescriptionEmail, sendDoctorRejectionEmail, sendDoctorApprovalEmail };
+module.exports = {
+  sendPrescriptionEmail,
+  sendDoctorRejectionEmail,
+  sendDoctorApprovalEmail,
+  isSmtpConfigured,
+  isEmailConfigured,
+  isTwilioEmailConfigured,
+};

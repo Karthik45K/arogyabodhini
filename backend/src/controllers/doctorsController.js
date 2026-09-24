@@ -3,14 +3,51 @@ const {
   getSpecialtyForDisease,
   normalizeDiseaseName,
   normalizeSpecialty,
+  normalizeDoctorSpecialty,
 } = require('../config/diseaseSpecialtyMap')
 
-const specialtyQuery = (specialty) => ({
-  $or: [
-    { specialty: normalizeSpecialty(specialty) },
-    { specialty: new RegExp(normalizeSpecialty(specialty), 'i') },
-  ]
-})
+/**
+ * Match doctors by canonical specialty AND common raw variants
+ * (spaces/underscores) so approved doctors with unnormalized specialty strings
+ * are still found.
+ */
+const specialtyQuery = (specialty) => {
+  const canonical = normalizeSpecialty(specialty)
+  if (!canonical) return { specialty: { $exists: false } }
+
+  const spaced = canonical.replace(/-/g, ' ')
+  const underscored = canonical.replace(/-/g, '_')
+  const escaped = canonical.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+  const flexible = new RegExp(`^${escaped.replace(/-/g, '[-_\\s]+')}$`, 'i')
+
+  return {
+    $or: [
+      { specialty: canonical },
+      { specialty: spaced },
+      { specialty: underscored },
+      { specialty: new RegExp(`^${escaped}$`, 'i') },
+      { specialty: flexible },
+    ],
+  }
+}
+
+/**
+ * Persist canonical specialty on all doctor documents that need it.
+ * Idempotent — safe to run repeatedly.
+ */
+const normalizeExistingDoctorSpecialties = async () => {
+  const doctors = await Doctor.find({ specialty: { $exists: true, $ne: '' } })
+    .select('_id specialty')
+    .lean()
+  let updated = 0
+  for (const doctor of doctors) {
+    const canonical = normalizeDoctorSpecialty(doctor.specialty)
+    if (!canonical || canonical === doctor.specialty) continue
+    await Doctor.updateOne({ _id: doctor._id }, { $set: { specialty: canonical } })
+    updated += 1
+  }
+  return { scanned: doctors.length, updated }
+}
 
 const prioritizeSeedDoctors = (doctors) => [...doctors].sort((a, b) => {
   const aIsSeed = /^doc-\d+$/i.test(String(a.id || ''))
@@ -97,12 +134,70 @@ const lookupDoctorsForTriage = async (specialtyName, diseaseName) => {
   }
 }
 
+/**
+ * Strict specialty lookup for patient waiting/matching.
+ * Does NOT fall back to General Physician when the specialty has no doctors online.
+ */
+const lookupDoctorsBySpecialtyStrict = async (specialtyName) => {
+  const targetSpecialty = normalizeSpecialty(specialtyName)
+  if (!specialtyName || !String(specialtyName).trim()) {
+    return { found: false, specialty: targetSpecialty, doctors: [] }
+  }
+
+  let doctors = await Doctor.find(specialtyQuery(targetSpecialty)).lean()
+
+  // Loose match only within the same specialty wording (still no GP fallback)
+  if (!doctors.length) {
+    const cleanWord = String(specialtyName).replace(/[^a-zA-Z]/g, '')
+    if (cleanWord.length >= 4) {
+      const rootRegex = new RegExp(cleanWord.slice(0, Math.min(8, cleanWord.length)), 'i')
+      doctors = await Doctor.find({ specialty: rootRegex }).lean()
+    }
+  }
+
+  return {
+    found: doctors.length > 0,
+    specialty: targetSpecialty,
+    doctors: prioritizeSeedDoctors(doctors),
+  }
+}
+
+/** GET /api/doctors/by-specialty/:specialty — no GP fallback */
+const getDoctorsBySpecialty = async (req, res, next) => {
+  try {
+    const specialtyName = decodeURIComponent(String(req.params.specialty || '')).trim()
+    if (!specialtyName) {
+      return res.status(400).json({
+        success: false,
+        error: 'INVALID_INPUT',
+        message: 'Specialty name is required.',
+      })
+    }
+
+    const lookup = await lookupDoctorsBySpecialtyStrict(specialtyName)
+    return res.status(200).json({
+      success: true,
+      data: {
+        specialty: lookup.specialty,
+        requestedSpecialty: specialtyName,
+        doctors: lookup.doctors,
+      },
+    })
+  } catch (err) {
+    next(err)
+  }
+}
+
 const lookupDoctorsByDisease = async (diseaseName) => {
   return lookupDoctorsForTriage(null, diseaseName)
 }
 
 module.exports = {
   getDoctorsByDisease,
+  getDoctorsBySpecialty,
   lookupDoctorsByDisease,
   lookupDoctorsForTriage,
+  lookupDoctorsBySpecialtyStrict,
+  normalizeExistingDoctorSpecialties,
+  specialtyQuery,
 }

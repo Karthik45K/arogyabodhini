@@ -1,0 +1,158 @@
+.entry-root {
+  min-height: 100vh;
+  background: linear-gradient(160deg, #e8f1fb 0%, #f8fafc 45%, #eef6ff 100%);
+  display: flex;
+  flex-direction: column;
+}
+
+.entry-top {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  padding: 14px clamp(14px, 3vw, 28px);
+}
+
+.entry-portal {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+
+.entry-portal-btn {
+  min-height: 40px;
+  padding: 8px 14px;
+  border-radius: 10px;
+  border: 1.5px solid #1565c0;
+  background: #ffffff;
+  color: #0d47a1;
+  font-size: 0.9rem;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.entry-portal-btn:hover {
+  background: #e3f2fd;
+}
+
+.entry-main {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 8px 16px 48px;
+  gap: 22px;
+}
+
+.entry-brand {
+  text-align: center;
+  margin-top: 8px;
+}
+
+.entry-logo {
+  width: 56px;
+  height: 56px;
+  margin-bottom: 8px;
+}
+
+.entry-title {
+  margin: 0;
+  font-size: clamp(1.6rem, 5vw, 2.2rem);
+  font-weight: 900;
+  letter-spacing: 0.06em;
+  color: #0d47a1;
+}
+
+.entry-tagline {
+  margin: 8px 0 0;
+  font-size: 1.05rem;
+  font-weight: 600;
+  color: #334155;
+  max-width: 420px;
+}
+
+.entry-section-title {
+  margin: 0 0 12px;
+  font-size: 1.2rem;
+  font-weight: 800;
+  color: #0f172a;
+  text-align: center;
+}
+
+.entry-lang {
+  width: 100%;
+  max-width: 480px;
+}
+
+.entry-lang-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 10px;
+}
+
+@media (min-width: 520px) {
+  .entry-lang-grid {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+.entry-lang-btn {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  min-height: 64px;
+  padding: 14px 12px;
+  border-radius: 14px;
+  border: 2px solid #90caf9;
+  background: #ffffff;
+  cursor: pointer;
+  font-weight: 800;
+}
+
+.entry-lang-btn:hover {
+  border-color: #1565c0;
+  background: #e3f2fd;
+}
+
+.entry-lang-btn--selected {
+  border-color: #0d47a1;
+  background: #1565c0;
+  color: #ffffff;
+  box-shadow: 0 4px 14px rgba(13, 71, 161, 0.25);
+}
+
+.entry-lang-btn--selected .entry-lang-en {
+  color: rgba(255, 255, 255, 0.85);
+}
+
+.entry-lang-native {
+  font-size: 1.2rem;
+}
+
+.entry-lang-en {
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: #475569;
+}
+
+.entry-login {
+  width: 100%;
+  max-width: 480px;
+  margin-top: 4px;
+}
+
+/* Embedded patient identity: drop full-page chrome */
+.entry-login .pis-root {
+  min-height: auto;
+  background: transparent;
+  padding: 0 0 24px;
+  justify-content: flex-start;
+}
+
+.entry-login .pis-brand,
+.entry-login .pis-title,
+.entry-login .pis-sub {
+  display: none;
+}
