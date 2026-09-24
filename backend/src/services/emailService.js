@@ -11,6 +11,7 @@ function createTransporter() {
     port: parseInt(process.env.SMTP_PORT || '587'),
     secure: process.env.SMTP_SECURE === 'true' || process.env.SMTP_PORT === '465',
     auth: { user, pass },
+    family: 4,
     tls: {
       rejectUnauthorized: false,
     },
@@ -105,7 +106,7 @@ async function sendViaTwilioEmail({ to, toName, subject, html, pdfAttachment }) 
   if (pdfAttachment?.content) {
     content.attachments = [{
       filename: pdfAttachment.filename,
-      contentType: 'application/pdf',
+      type: 'application/pdf',
       content: Buffer.isBuffer(pdfAttachment.content)
         ? pdfAttachment.content.toString('base64')
         : String(pdfAttachment.content),
